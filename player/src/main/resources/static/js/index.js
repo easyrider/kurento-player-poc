@@ -84,7 +84,7 @@ window.onload = function() {
 					video1.style.display = 'none';
 					video2.style.display = 'block';
 				}, 10000)
-				// start(fileList[playing], video2, ws2)
+				start(fileList[playing], video2, ws2)
 
 				// Update the button text to 'Pause'
 
