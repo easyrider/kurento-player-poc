@@ -155,14 +155,17 @@ window.onload = function() {
 			var fullW = zoomScale * size.value * v.clientWidth;
 			var fullH = zoomScale * size.value * v.clientHeight;
 
-			var scaleX = zoomScale === 1 ? 0 : ((zoomScale * v.clientWidth) - v.clientWidth) / 2;
-			var scaleY = zoomScale === 1 ? 0 : ((zoomScale * v.clientHeight) - v.clientHeight) / 2;
+			var zoomW = (zoomScale * v.clientWidth);
+			var zoomH = (zoomScale * v.clientHeight);
+
+			var scaleX = zoomScale === 1 ? 0 : (zoomW - v.clientWidth) / 2;
+			var scaleY = zoomScale === 1 ? 0 : (zoomH - v.clientHeight) / 2;
 			var scaleW = v.clientWidth / zoomScale;
 			var scaleH = v.clientHeight / zoomScale;
 
 			console.log('drawImage params=>', scaleX,scaleY,scaleW,scaleH,0,0,fullW,fullH);
 
-			context.drawImage(v,scaleY,scaleX,scaleW,scaleH,0,0,fullW,fullH);
+			context.drawImage(v,scaleX,scaleY,scaleW,scaleH,0,0,fullW,fullH);
 
 			//lets make a screenshot
 			image.src = canvas.toDataURL();
