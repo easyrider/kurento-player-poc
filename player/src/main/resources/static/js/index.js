@@ -48,6 +48,9 @@ var fileList = [
 ]
 var playing = 0;
 
+// for saving the common zoom scale for control bar and screenshot.
+var zoomScale = 1;
+
 window.onload = function() {
 	console = new Console();
 	video1 = document.getElementById('video1');
@@ -74,17 +77,17 @@ window.onload = function() {
 				console.log("=== start video1 ===");
 				start(fileList[0], video1, ws1)
 
-				setTimeout(function(){
-					console.log("=== start video2 ===");
-					start(fileList[1], video2, ws2)
-				}, 5000)
-
-				setTimeout(function(){
-					console.log("=== show video2 ===");
-					video1.style.display = 'none';
-					video2.style.display = 'block';
-				}, 10000)
-				start(fileList[playing], video2, ws2)
+				// setTimeout(function(){
+				// 	console.log("=== start video2 ===");
+				// 	start(fileList[1], video2, ws2)
+				// }, 5000)
+				//
+				// setTimeout(function(){
+				// 	console.log("=== show video2 ===");
+				// 	video1.style.display = 'none';
+				// 	video2.style.display = 'block';
+				// }, 10000)
+				// start(fileList[playing], video2, ws2)
 
 				// Update the button text to 'Pause'
 
@@ -120,6 +123,163 @@ window.onload = function() {
 
 
 	// bar end
+
+	var SCREENSHOTS = (function(){
+		console.log("SCREENSHOTS");
+
+		var	v = document.getElementsByTagName('video')[0];
+
+		//SCREENSHOTS
+		//for screenshot options and creation
+		var image = document.getElementById('image');
+		var size = document.getElementById("size");
+		var screenshotsize = document.getElementById("screenshotsize");
+
+		//control size of screenshot
+		size.addEventListener('change', function(){
+			var s = this.value;
+			screenshotsize.innerHTML = s;
+		}, false);
+
+		var screenshot = document.getElementById("screenshot-button");
+		screenshot.addEventListener('click', function(){
+
+			//grab current video frame and put it into a canvas element, consider screenshotsize
+			canvas = document.createElement("canvas");
+			var context = canvas.getContext('2d');
+
+			var w = v.clientWidth * size.value;
+			var h = v.clientHeight * size.value;
+			canvas.width = w;
+			canvas.height = h;
+			var fullW = zoomScale * size.value * v.clientWidth;
+			var fullH = zoomScale * size.value * v.clientHeight;
+
+			var scaleX = zoomScale === 1 ? 0 : ((zoomScale * v.clientWidth) - v.clientWidth) / 2;
+			var scaleY = zoomScale === 1 ? 0 : ((zoomScale * v.clientHeight) - v.clientHeight) / 2;
+			var scaleW = v.clientWidth / zoomScale;
+			var scaleH = v.clientHeight / zoomScale;
+
+			console.log('drawImage params=>', scaleX,scaleY,scaleW,scaleH,0,0,fullW,fullH);
+
+			context.drawImage(v,scaleY,scaleX,scaleW,scaleH,0,0,fullW,fullH);
+
+			//lets make a screenshot
+			image.src = canvas.toDataURL();
+			image.style.display = "block";
+
+		},false);
+	})();
+
+	// -----------------------------------------------------------------------
+	var vidControls = (function () {
+		/* predefine zoom and rotate */
+		var zoom = 1,
+			rotate = 0;
+
+		/* Grab the necessary DOM elements */
+		var stage = document.getElementById('video-container'),
+			v = document.getElementsByTagName('video')[0],
+			controls = document.getElementById('video-controls');
+
+		/* Array of possible browser specific settings for transformation */
+		var properties = ['transform', 'WebkitTransform', 'MozTransform',
+	                    'msTransform', 'OTransform'],
+			prop = properties[0];
+
+		/* Iterators and stuff */
+		var i, j, t;
+
+		/* Find out which CSS transform the browser supports */
+		for (i = 0, j = properties.length; i < j; i++) {
+			if (typeof stage.style[properties[i]] !== 'undefined') {
+				prop = properties[i];
+				break;
+			}
+		}
+
+		/* Position video */
+		v.style.left = 0;
+		v.style.top = 0;
+
+		/* If there is a controls element, add the player buttons */
+		/* TODO: why does Opera not display the rotation buttons? */
+		if (controls) {
+			// controls.innerHTML = controls.innerHTML +
+			var controllers = document.createElement("change");
+			controllers.innerHTML =
+				'<button class="zoomin">+</button>' +
+				'<button class="zoomout">-</button>' +
+				'<button class="left">⇠</button>' +
+				'<button class="right">⇢</button>' +
+				'<button class="up">⇡</button>' +
+				'<button class="down">⇣</button>' +
+				'<button class="rotateleft">&#x21bb;</button>' +
+				'<button class="rotateright">&#x21ba;</button>' +
+				'<button class="reset">reset</button>';
+			controls.insertAdjacentElement('beforeend', controllers)
+		}
+
+		/* If a button was clicked (uses event delegation)...*/
+		controls.addEventListener('click', function (e) {
+			t = e.target;
+			if (t.nodeName.toLowerCase() === 'button') {
+
+				/* Check the class name of the button and act accordingly */
+				switch (t.className) {
+
+					/* Increase zoom and set the transformation */
+				case 'zoomin':
+					zoom = zoom + 0.1;
+					v.style[prop] = 'scale(' + zoom + ') rotate(' + rotate + 'deg)';
+					break;
+
+					/* Decrease zoom and set the transformation */
+				case 'zoomout':
+					zoom = zoom - 0.1;
+					v.style[prop] = 'scale(' + zoom + ') rotate(' + rotate + 'deg)';
+					break;
+
+					/* Increase rotation and set the transformation */
+				case 'rotateleft':
+					rotate = rotate + 5;
+					v.style[prop] = 'rotate(' + rotate + 'deg) scale(' + zoom + ')';
+					break;
+					/* Decrease rotation and set the transformation */
+				case 'rotateright':
+					rotate = rotate - 5;
+					v.style[prop] = 'rotate(' + rotate + 'deg) scale(' + zoom + ')';
+					break;
+
+					/* Move video around by reading its left/top and altering it */
+				case 'left':
+					v.style.left = (parseInt(v.style.left, 10) - 5) + 'px';
+					break;
+				case 'right':
+					v.style.left = (parseInt(v.style.left, 10) + 5) + 'px';
+					break;
+				case 'up':
+					v.style.top = (parseInt(v.style.top, 10) - 5) + 'px';
+					break;
+				case 'down':
+					v.style.top = (parseInt(v.style.top, 10) + 5) + 'px';
+					break;
+
+					/* Reset all to default */
+				case 'reset':
+					zoom = 1;
+					rotate = 0;
+					v.style.top = 0 + 'px';
+					v.style.left = 0 + 'px';
+					v.style[prop] = 'rotate(' + rotate + 'deg) scale(' + zoom + ')';
+					break;
+				}
+				zoomScale = zoom;
+				e.preventDefault();
+			}
+		}, false);
+	})();
+	// -----------------------------------------------------------------------
 
 }
 
