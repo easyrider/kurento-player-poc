@@ -29,8 +29,7 @@ var I_CAN_STOP = 1;
 var I_AM_STARTING = 2;
 var seekUpdateTimer = {};
 var seekUpdate = function() {
-	// console.log("=== seekUpdate seeking ===", seeking);
-	// if(!seeking)getPosition()
+	if(!seeking) getPosition(ws1)
 }
 
 var playButton = {};
@@ -50,6 +49,7 @@ var playing = 0;
 
 // for saving the common zoom scale for control bar and screenshot.
 var zoomScale = 1;
+var started = false;
 
 window.onload = function() {
 	console = new Console();
@@ -72,10 +72,17 @@ window.onload = function() {
 
 		// Event listener for the play/pause button
 		playButton.addEventListener("click", function() {
-			if (video.paused == true) {
+			console.log("=== video.paused ===", video.paused);
+			console.log(playButton.innerHTML);
+			var actionName = playButton.innerHTML;
+			if (actionName == "Play") {
 				// Play the video
-				console.log("=== start video1 ===");
-				start(fileList[0], video1, ws1)
+				if(!started){
+					started = true;
+					start(fileList[0], video1, ws1)
+				} else {
+					resume(ws1)
+				}
 
 				// setTimeout(function(){
 				// 	console.log("=== start video2 ===");
@@ -93,17 +100,14 @@ window.onload = function() {
 
 			} else {
 				// Pause the video
-				pause();
+				pause(ws1);
 
 				// Update the button text to 'Play'
 			}
 		});
 
 		seekBar.addEventListener("change", function() {
-			// Calculate the new time
-
-			doSeek()
-
+			doSeek(ws1)
 		});
 
 		volumeBar.addEventListener("change", function() {
@@ -305,7 +309,7 @@ var wsOnMsg = function(message) {
 		onError('Error message from server: ' + parsedMessage.message);
 		break;
 	case 'playEnd':
-		playEnd();
+		playEnd(video1, ws1);
 		break;
 	case 'videoInfo':
 		showVideoData(parsedMessage);
@@ -430,25 +434,34 @@ function startResponse(message) {
 	});
 }
 
-function pause() {
+function pause(targetWs) {
 	togglePause()
+	console.log('Stopping video ...');
+	playButton.innerHTML = "Play";
+
+	if(seekUpdateTimer){
+		window.clearInterval(seekUpdateTimer);
+		seekUpdateTimer = null;
+	}
 	console.log('Pausing video ...');
 	var message = {
 		id : 'pause'
 	}
-	sendMessage(message);
+	sendMessage(message, targetWs);
 }
 
-function resume() {
+function resume(targetWs) {
+	playButton.innerHTML = "Pause";
+	seekUpdateTimer = setInterval(seekUpdate, 1000);
 	togglePause()
 	console.log('Resuming video ...');
 	var message = {
 		id : 'resume'
 	}
-	sendMessage(message);
+	sendMessage(message, targetWs);
 }
 
-function stop() {
+function stop(targetWs) {
 	console.log('Stopping video ...');
 	if(seekUpdateTimer){
 		window.clearInterval(seekUpdateTimer);
@@ -462,24 +475,23 @@ function stop() {
 		var message = {
 			id : 'stop'
 		}
-		sendMessage(message);
+		sendMessage(message, targetWs);
 	}
 	hideSpinner(video);
 }
 
-function playEnd() {
+function playEnd(targetVideo, targetWs) {
 	setState(I_CAN_START);
-	hideSpinner(video);
-	stop()
+	hideSpinner(targetVideo);
+	stop(targetWs)
 	playing += 1;
 
 	if(playing < fileList.length){
-		start(fileList[playing]);
-
+		start(fileList[playing], targetVideo, targetWs);
 	}
 }
 
-function doSeek() {
+function doSeek(targetWs) {
 	var seekPosition = parseInt(document.getElementById('duration').value * (seekBar.value / 100));
 	seeking = true;
 	video.currentTime = seekPosition;
@@ -496,14 +508,14 @@ function doSeek() {
 		id : 'doSeek',
 		position: seekPosition
 	}
-	sendMessage(message);
+	sendMessage(message, targetWs);
 }
 
-function getPosition() {
+function getPosition(targetWs) {
 	var message = {
 		id : 'getPosition'
 	}
-	sendMessage(message);
+	sendMessage(message, targetWs);
 }
 
 function showVideoData(parsedMessage) {

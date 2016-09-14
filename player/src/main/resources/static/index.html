@@ -39,7 +39,7 @@
 </head>
 <body>
 	<header>
-		<div class="navbar navbar-inverse navbar-fixed-top">
+		<div class="navbar navbar-inverse navbar-fixed-top" style="display: none;">
 			<div class="container">
 				<div class="navbar-header">
 					<button type="button" class="navbar-toggle" data-toggle="collapse"
@@ -57,8 +57,8 @@
 			</div>
 		</div>
 	</header>
-	<div class="container">
-		<div class="page-header">
+	<div class="container" style="display: none;">
+		<div class="page-header" >
 			<h1>Kurento Tutorial: Play of a video through WebRTC</h1>
 			<p>
 				This web application consists on a video play through <a
@@ -176,31 +176,10 @@
 
 				<br> <label class="control-label" for="console">Console</label><br>
 				<br>
-				<div id="console" class="democonsole" style="height: 142px;">
-					<ul></ul>
-				</div>
+
 			</div>
 			<div class="col-md-7">
 
-				<div id="video-container">
-					<video id="video1" autoplay width="640px" height="480px"
-						poster="img/webrtc.png" preload="auto"></video>
-					<video id="video2" autoplay width="640px" height="480px"
-						poster="img/webrtc.png" preload="auto" style="display: none"></video>
-
-					<div id="video-controls">
-						<button type="button" id="play-pause" class="play">Play</button>
-						<input type="range" id="seek-bar" value="0">
-						<button type="button" id="mute">Mute</button>
-						<input type="range" id="volume-bar" min="0" max="1" step="0.1" value="1">
-						<button type="button" id="full-screen">Full-Screen</button>
-
-						<button id="screenshot-button">Create Screenshot</button>
-						<input type="range" id="size" min="1" max="4" step="1" value="1">
-						<span id="screenshotsize">1</span>
-
-					</div>
-				</div>
 				<br>
 				<br>
 				<br>
@@ -219,9 +198,34 @@
 		</div>
 	</div>
 
+	<div id="console" class="democonsole" style="height: 142px;">
+		<ul></ul>
+	</div>
+
+	<div id="video-container">
+		<video id="video1" autoplay width="640px" height="480px"
+			poster="img/webrtc.png" preload="auto"></video>
+		<video id="video2" autoplay width="640px" height="480px"
+			poster="img/webrtc.png" preload="auto" style="display: none"></video>
+
+		<div id="video-controls">
+			<button type="button" id="play-pause" class="play">Play</button>
+			<input type="range" id="seek-bar" value="0">
+			<button type="button" id="mute">Mute</button>
+			<input type="range" id="volume-bar" min="0" max="1" step="0.1" value="1">
+			<button type="button" id="full-screen">Full-Screen</button>
+
+			<button id="screenshot-button">Create Screenshot</button>
+			<input type="range" id="size" min="1" max="4" step="1" value="1">
+			<span id="screenshotsize">1</span>
+
+		</div>
+	</div>
+
+
 	<img id="image" style="clear:both;display:none;">
 
-	<footer>
+	<footer style="display: none;">
 		<div class="foot-fixed-bottom">
 			<div class="container text-center">
 				<hr>
