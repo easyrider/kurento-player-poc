@@ -1,12 +1,29 @@
-FROM kurento/kurento-media-server:6.5.0
+# stream oriented kurento
+#
+# VERSION               4.4.3
 
-RUN	apt-get update \
+FROM      ubuntu:14.04
+MAINTAINER Patxi Gortázar <patxi.gortazar@gmail.com>
+
+RUN apt-get update \
+  && apt-get -y dist-upgrade \
+    && apt-get install -y wget
+
+RUN    echo "deb http://ubuntu.kurento.org/ trusty kms6" | tee /etc/apt/sources.list.d/kurento.list \
+    && wget -O - http://ubuntu.kurento.org/kurento.gpg.key | apt-key add - \
+    && apt-get update \
+    && apt-get -y install kurento-media-server-6.0 \
   && apt-get -y install gstreamer1.5-plugins-good \
   && apt-get -y install openh264-gst-plugins-bad-1.5 \
-	&& apt-get clean \
+  && apt-get -y dist-upgrade \
+    && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
 EXPOSE 8888
+
 COPY ./entrypoint.sh /entrypoint.sh
+
 ENV GST_DEBUG=Kurento*:5
+
 ENTRYPOINT ["/entrypoint.sh"]
+

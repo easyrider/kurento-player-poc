@@ -4,7 +4,7 @@
 
 ## start kurento docker
 
-`docker run --name kms -p 8888:8888 -e GST_DEBUG=Kurento*:5 --rm -it kurento-docker-dev`
+`docker run --name kms -p 8888:8888 -e GST_DEBUG=Kurento\*:5 --rm -it kurento-docker-dev`
 
 ## start command
 
