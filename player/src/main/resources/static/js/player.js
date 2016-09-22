@@ -81,12 +81,12 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
 	});
 
 	fullScreenButton.addEventListener("click", function() {
-		if (video.requestFullscreen) {
-			video.requestFullscreen();
-		} else if (video.mozRequestFullScreen) {
-			video.mozRequestFullScreen(); // Firefox
-		} else if (video.webkitRequestFullscreen) {
-			video.webkitRequestFullscreen(); // Chrome and Safari
+		if (video1.requestFullscreen) {
+			video1.requestFullscreen();
+		} else if (video1.mozRequestFullScreen) {
+			video1.mozRequestFullScreen(); // Firefox
+		} else if (video1.webkitRequestFullscreen) {
+			video1.webkitRequestFullscreen(); // Chrome and Safari
 		}
 	});
 
