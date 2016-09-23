@@ -102,8 +102,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   var SCREENSHOTS = (function(){
     console.log("SCREENSHOTS");
 
-    var  v = document.getElementsByTagName('video')[0];
-
     //SCREENSHOTS
     //for screenshot options and creation
     var image = document.getElementById('image');
@@ -123,24 +121,24 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       canvas = document.createElement("canvas");
       var context = canvas.getContext('2d');
 
-      var w = v.clientWidth * size.value;
-      var h = v.clientHeight * size.value;
+      var w = currentVideo.clientWidth * size.value;
+      var h = currentVideo.clientHeight * size.value;
       canvas.width = w;
       canvas.height = h;
-      var fullW = zoomScale * size.value * v.clientWidth;
-      var fullH = zoomScale * size.value * v.clientHeight;
+      var fullW = zoomScale * size.value * currentVideo.clientWidth;
+      var fullH = zoomScale * size.value * currentVideo.clientHeight;
 
-      var zoomW = (zoomScale * v.clientWidth);
-      var zoomH = (zoomScale * v.clientHeight);
+      var zoomW = (zoomScale * currentVideo.clientWidth);
+      var zoomH = (zoomScale * currentVideo.clientHeight);
 
-      var scaleX = zoomScale === 1 ? 0 : (zoomW - v.clientWidth) / 2;
-      var scaleY = zoomScale === 1 ? 0 : (zoomH - v.clientHeight) / 2;
-      var scaleW = v.clientWidth / zoomScale;
-      var scaleH = v.clientHeight / zoomScale;
+      var scaleX = zoomScale === 1 ? 0 : (zoomW - currentVideo.clientWidth) / 2;
+      var scaleY = zoomScale === 1 ? 0 : (zoomH - currentVideo.clientHeight) / 2;
+      var scaleW = currentVideo.clientWidth / zoomScale;
+      var scaleH = currentVideo.clientHeight / zoomScale;
 
       console.log('drawImage params=>', scaleX,scaleY,scaleW,scaleH,0,0,fullW,fullH);
 
-      context.drawImage(v,scaleX,scaleY,scaleW,scaleH,0,0,fullW,fullH);
+      context.drawImage(currentVideo,scaleX,scaleY,scaleW,scaleH,0,0,fullW,fullH);
 
       //lets make a screenshot
       image.src = canvas.toDataURL();
