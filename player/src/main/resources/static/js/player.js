@@ -104,9 +104,9 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
 
     //SCREENSHOTS
     //for screenshot options and creation
-    var image = document.getElementById('image');
-    var size = document.getElementById("size");
-    var screenshotsize = document.getElementById("screenshotsize");
+    var image = $('#image')[0];
+    var size = videoContainer.find(".size")[0];
+    var screenshotsize = videoContainer.find(".screenshotsize")[0];
 
     //control size of screenshot
     size.addEventListener('change', function(){
@@ -114,8 +114,8 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       screenshotsize.innerHTML = s;
     }, false);
 
-    var screenshot = document.getElementById("screenshot-button");
-    screenshot.addEventListener('click', function(){
+    var screenshot = videoContainer.find("#screenshot-button");
+    screenshot.click(function() {
 
       //grab current video frame and put it into a canvas element, consider screenshotsize
       canvas = document.createElement("canvas");
@@ -144,7 +144,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       image.src = canvas.toDataURL();
       image.style.display = "block";
 
-    },false);
+    });
   })();
 
   // -----------------------------------------------------------------------
