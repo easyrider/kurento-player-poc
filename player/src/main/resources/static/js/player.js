@@ -34,11 +34,13 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
 
     var fullScreenButton = videoContainer.find(".full-screen");
 
-  var seekBar = document.getElementById("seek-bar");
-  var volumeBar = document.getElementById("volume-bar");
+    var seekBar = videoContainer.find(".seek-bar");
+    var volumeBar = videoContainer.find(".volume-bar");
 
     var controlPanel = [playButton, seekBar, muteButton, muteButton, fullScreenButton]
 
+    //default player is video1
+    var currentVideo = video1;
 
     playButton.click(function() {
 
@@ -75,22 +77,22 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   });
 
 
-  seekBar.addEventListener("change", function() {
+  seekBar.change(function() {
     doSeek(ws1, video1)
   });
 
-  volumeBar.addEventListener("change", function() {
+  volumeBar.change(function() {
     // Update the video volume
-    video.volume = volumeBar.value;
+    currentVideo.volume = volumeBar.val();
   });
 
   fullScreenButton.click(function() {
-    if (video1.requestFullscreen) {
-      video1.requestFullscreen();
-    } else if (video1.mozRequestFullScreen) {
-      video1.mozRequestFullScreen(); // Firefox
-    } else if (video1.webkitRequestFullscreen) {
-      video1.webkitRequestFullscreen(); // Chrome and Safari
+    if (currentVideo.requestFullscreen) {
+      currentVideo.requestFullscreen();
+    } else if (currentVideo.mozRequestFullScreen) {
+      currentVideo.mozRequestFullScreen(); // Firefox
+    } else if (currentVideo.webkitRequestFullscreen) {
+      currentVideo.webkitRequestFullscreen(); // Chrome and Safari
     }
   });
 
@@ -450,7 +452,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   }
 
   var doSeek = function (targetWs, targetVideo) {
-    var seekPosition = parseInt(document.getElementById('duration').value * (seekBar.value / 100));
+    var seekPosition = parseInt(document.getElementById('duration').value * (seekBar.val() / 100));
     seeking = true;
     targetVideo.currentTime = seekPosition;
     if(seekUpdateTimer){
@@ -574,6 +576,4 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       arguments[i].style.background = '';
     }
   }
-
-
 }
