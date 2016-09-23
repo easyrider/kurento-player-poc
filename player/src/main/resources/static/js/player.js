@@ -27,8 +27,12 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     var video2 = videoContainer.find('.video.slave')[0];
 
     var playButton = videoContainer.find(".play-pause");
-  var muteButton = document.getElementById("mute");
-  var fullScreenButton = document.getElementById("full-screen");
+
+    // mute button not complete 
+    // no Action register on mute button
+    var muteButton = videoContainer.find(".mute");
+
+    var fullScreenButton = videoContainer.find(".full-screen");
 
   var seekBar = document.getElementById("seek-bar");
   var volumeBar = document.getElementById("volume-bar");
@@ -80,7 +84,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     video.volume = volumeBar.value;
   });
 
-  fullScreenButton.addEventListener("click", function() {
+  fullScreenButton.click(function() {
     if (video1.requestFullscreen) {
       video1.requestFullscreen();
     } else if (video1.mozRequestFullScreen) {
