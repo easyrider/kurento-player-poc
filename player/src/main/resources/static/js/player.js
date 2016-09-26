@@ -34,11 +34,13 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
 
     var fullScreenButton = videoContainer.find(".full-screen");
 
-  var seekBar = document.getElementById("seek-bar");
-  var volumeBar = document.getElementById("volume-bar");
+    var seekBar = videoContainer.find(".seek-bar");
+    var volumeBar = videoContainer.find(".volume-bar");
 
     var controlPanel = [playButton, seekBar, muteButton, muteButton, fullScreenButton]
 
+    //default player is video1
+    var currentVideo = video1;
 
     playButton.click(function() {
 
@@ -75,22 +77,22 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   });
 
 
-  seekBar.addEventListener("change", function() {
+  seekBar.change(function() {
     doSeek(ws1, video1)
   });
 
-  volumeBar.addEventListener("change", function() {
+  volumeBar.change(function() {
     // Update the video volume
-    video.volume = volumeBar.value;
+    currentVideo.volume = volumeBar.val();
   });
 
   fullScreenButton.click(function() {
-    if (video1.requestFullscreen) {
-      video1.requestFullscreen();
-    } else if (video1.mozRequestFullScreen) {
-      video1.mozRequestFullScreen(); // Firefox
-    } else if (video1.webkitRequestFullscreen) {
-      video1.webkitRequestFullscreen(); // Chrome and Safari
+    if (currentVideo.requestFullscreen) {
+      currentVideo.requestFullscreen();
+    } else if (currentVideo.mozRequestFullScreen) {
+      currentVideo.mozRequestFullScreen(); // Firefox
+    } else if (currentVideo.webkitRequestFullscreen) {
+      currentVideo.webkitRequestFullscreen(); // Chrome and Safari
     }
   });
 
@@ -100,13 +102,11 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   var SCREENSHOTS = (function(){
     console.log("SCREENSHOTS");
 
-    var  v = document.getElementsByTagName('video')[0];
-
     //SCREENSHOTS
     //for screenshot options and creation
-    var image = document.getElementById('image');
-    var size = document.getElementById("size");
-    var screenshotsize = document.getElementById("screenshotsize");
+    var image = $('#image')[0];
+    var size = videoContainer.find(".size")[0];
+    var screenshotsize = videoContainer.find(".screenshotsize")[0];
 
     //control size of screenshot
     size.addEventListener('change', function(){
@@ -114,37 +114,37 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       screenshotsize.innerHTML = s;
     }, false);
 
-    var screenshot = document.getElementById("screenshot-button");
-    screenshot.addEventListener('click', function(){
+    var screenshot = videoContainer.find("#screenshot-button");
+    screenshot.click(function() {
 
       //grab current video frame and put it into a canvas element, consider screenshotsize
       canvas = document.createElement("canvas");
       var context = canvas.getContext('2d');
 
-      var w = v.clientWidth * size.value;
-      var h = v.clientHeight * size.value;
+      var w = currentVideo.clientWidth * size.value;
+      var h = currentVideo.clientHeight * size.value;
       canvas.width = w;
       canvas.height = h;
-      var fullW = zoomScale * size.value * v.clientWidth;
-      var fullH = zoomScale * size.value * v.clientHeight;
+      var fullW = zoomScale * size.value * currentVideo.clientWidth;
+      var fullH = zoomScale * size.value * currentVideo.clientHeight;
 
-      var zoomW = (zoomScale * v.clientWidth);
-      var zoomH = (zoomScale * v.clientHeight);
+      var zoomW = (zoomScale * currentVideo.clientWidth);
+      var zoomH = (zoomScale * currentVideo.clientHeight);
 
-      var scaleX = zoomScale === 1 ? 0 : (zoomW - v.clientWidth) / 2;
-      var scaleY = zoomScale === 1 ? 0 : (zoomH - v.clientHeight) / 2;
-      var scaleW = v.clientWidth / zoomScale;
-      var scaleH = v.clientHeight / zoomScale;
+      var scaleX = zoomScale === 1 ? 0 : (zoomW - currentVideo.clientWidth) / 2;
+      var scaleY = zoomScale === 1 ? 0 : (zoomH - currentVideo.clientHeight) / 2;
+      var scaleW = currentVideo.clientWidth / zoomScale;
+      var scaleH = currentVideo.clientHeight / zoomScale;
 
       console.log('drawImage params=>', scaleX,scaleY,scaleW,scaleH,0,0,fullW,fullH);
 
-      context.drawImage(v,scaleX,scaleY,scaleW,scaleH,0,0,fullW,fullH);
+      context.drawImage(currentVideo,scaleX,scaleY,scaleW,scaleH,0,0,fullW,fullH);
 
       //lets make a screenshot
       image.src = canvas.toDataURL();
       image.style.display = "block";
 
-    },false);
+    });
   })();
 
   // -----------------------------------------------------------------------
@@ -450,7 +450,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   }
 
   var doSeek = function (targetWs, targetVideo) {
-    var seekPosition = parseInt(document.getElementById('duration').value * (seekBar.value / 100));
+    var seekPosition = parseInt(document.getElementById('duration').value * (seekBar.val() / 100));
     seeking = true;
     targetVideo.currentTime = seekPosition;
     if(seekUpdateTimer){
@@ -574,6 +574,4 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       arguments[i].style.background = '';
     }
   }
-
-
 }
