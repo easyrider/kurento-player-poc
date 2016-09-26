@@ -49,10 +49,10 @@ button:hover {
 	cursor: pointer;
 }
 
-#seek-bar {
+.seek-bar {
 	width: 360px;
 }
 
-#volume-bar {
+.volume-bar {
 	width: 60px;
 }
