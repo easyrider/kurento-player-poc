@@ -4,7 +4,7 @@
 	position: relative;
 }
 
-#video-controls {
+.video-controls {
 	/*position: absolute;*/
 	bottom: 0;
 	left: 0;
@@ -31,7 +31,7 @@
 	);
 }
 
-#video-container:hover #video-controls {
+#video-container:hover .video-controls {
 	opacity: .9;
 }
 
