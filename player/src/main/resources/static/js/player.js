@@ -40,8 +40,11 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     var controlPanel = [playButton, seekBar, muteButton, muteButton, fullScreenButton]
 
     //default player is video1
+    var currentUsing = 1;
     var currentVideo = video1;
-    
+    var currentSocket = ws1;
+    var bufferPrepared = false;
+
     //store video info
     currentVideo.isSeekable = undefined;
     currentVideo.initSeekable = undefined;
@@ -55,9 +58,9 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       // Play the video
       if(!started){
         started = true;
-        start(fileList[0], video1, ws1)
+        start(fileList[0], currentVideo, currentSocket)
       } else {
-        resume(ws1)
+        resume(currentSocket)
       }
 
       // setTimeout(function(){
@@ -76,7 +79,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
 
     } else {
       // Pause the video
-      pause(ws1);
+      pause(currentSocket);
 
       // Update the button text to 'Play'
     }
@@ -84,7 +87,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
 
 
   seekBar.change(function() {
-    doSeek(ws1, video1)
+    doSeek(currentSocket, currentVideo)
   });
 
   volumeBar.change(function() {
@@ -268,6 +271,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   })();
 
 
+    // WebSocket action all here
     var wsOnMsg = function(message) {
       var parsedMessage = JSON.parse(message.data);
       console.info('Received message: ' + message.data);
@@ -280,7 +284,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
         onError('Error message from server: ' + parsedMessage.message);
         break;
       case 'playEnd':
-        playEnd(video1, ws1);
+        playEnd(currentVideo, currentSocket);
         break;
       case 'videoInfo':
         currentVideo.isSeekable = parsedMessage.isSeekable;
@@ -305,17 +309,34 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
 
         break;
       case 'position':
-        //not in need write to container's element
-        //document.getElementById("videoPosition").value = parsedMessage.position;
-        //var videoPosition = document.getElementById("videoPosition").value
         var videoPosition = parsedMessage.position;
-        //var seekBar = document.getElementById("seek-bar");
         var seekBar = videoContainer.find(".seek-bar")[0];
         var duration = currentVideo.videoDuration;
         var seekBarValue = videoPosition/duration * 100;
         console.log("=== seekBarValue ===", seekBarValue);
         seekBar.value = seekBarValue
 
+        var left = ( currentVideo.videoDuration - videoPosition ) / 1000;
+        console.log("=== left:"+left.toString()+" ===" )
+        if (left<10 && bufferPrepared==false) {
+          // even no next video, still have to mark prepared
+          bufferPrepared = true;
+
+          // check next video exist
+          playing += 1;
+
+          if(playing < fileList.length) {
+            console.log('less than 10 second, prepare next video!!');
+            if (currentUsing==1) {
+              console.log('now using video1, prepare next on video2')
+              start(fileList[playing], video2, ws2);
+            } else {
+              console.log('now using video2, prepare next on video1')
+              start(fileList[playing], video1, ws1);
+            }
+          }
+        }
+        
         break;
       case 'iceCandidate':
         break;
@@ -326,7 +347,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
         onError('Unrecognized message', parsedMessage);
       }
     }
-    ws1.onmessage = wsOnMsg
+    currentSocket.onmessage = wsOnMsg
 
   var start = function (sorceUrl, targetVideo, targetWs) {
     // Disable start button
@@ -459,11 +480,28 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     setState(I_CAN_START);
     hideSpinner(targetVideo);
     stop(targetWs, targetVideo)
-    playing += 1;
+    // move to WebSocket action
+    //playing += 1;
 
+    //start(fileList[playing], targetVideo, targetWs);
     if(playing < fileList.length){
-      start(fileList[playing], targetVideo, targetWs);
+      //switch video player here
+      console.log('here should do something')
+      currentVideo.style.display = "none";
+      if (currentUsing==1) {
+        currentUsing = 2;
+        currentVideo = video2;
+        currentSocket = ws2;
+      } else {
+        currentUsing = 1;
+        currentVideo = video1;
+        currentSocket = ws1;
+      }
+      currentVideo.style.display = "";
+
     }
+    console.log('switch video player to video'+currentUsing.toString());
+    console.log(currentVideo);
   }
 
   var doSeek = function (targetWs, targetVideo) {

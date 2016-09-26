@@ -8,11 +8,13 @@ window.onload = function() {
 	]
 	createVideoPlayer(wsUrl, videoContainerId, fileList);
 
+  /*
   videoContainerId = 'video-2';
   fileList = [
 		'http://jenkins.trunk.studio/videotest/video2.mkv'
   ]
   createVideoPlayer(wsUrl, videoContainerId, fileList);
+  */
 }
 
 window.onbeforeunload = function() {
