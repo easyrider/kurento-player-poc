@@ -41,6 +41,12 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
 
     //default player is video1
     var currentVideo = video1;
+    
+    //store video info
+    currentVideo.isSeekable = undefined;
+    currentVideo.initSeekable = undefined;
+    currentVideo.endSeekable = undefined;
+    currentVideo.videoDuration = undefined;
 
     playButton.click(function() {
 
@@ -148,15 +154,16 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   })();
 
   // -----------------------------------------------------------------------
+  // there will create extra controlls elements
   var vidControls = (function () {
     /* predefine zoom and rotate */
     var zoom = 1,
       rotate = 0;
 
     /* Grab the necessary DOM elements */
-    var stage = document.getElementById('video-container'),
-      v = document.getElementsByTagName('video')[0],
-      controls = document.getElementById('video-controls');
+    var stage = videoContainer[0];
+    var v = currentVideo;
+    var controls = videoContainer.find('.video-controls')[0];
 
     /* Array of possible browser specific settings for transformation */
     var properties = ['transform', 'WebkitTransform', 'MozTransform',
@@ -182,8 +189,10 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     /* TODO: why does Opera not display the rotation buttons? */
     if (controls) {
       // controls.innerHTML = controls.innerHTML +
-      var controllers = document.createElement("change");
-      controllers.innerHTML =
+      // TODO: use jQuery's methos to add control element.. 
+      //       or direct add on index.html ?
+      var extraControllers = document.createElement("change");
+      extraControllers.innerHTML =
         '<button class="zoomin">+</button>' +
         '<button class="zoomout">-</button>' +
         '<button class="left">⇠</button>' +
@@ -193,11 +202,13 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
         '<button class="rotateleft">&#x21bb;</button>' +
         '<button class="rotateright">&#x21ba;</button>' +
         '<button class="reset">reset</button>';
-      controls.insertAdjacentElement('beforeend', controllers)
+      controls.insertAdjacentElement('beforeend', extraControllers)
     }
 
     /* If a button was clicked (uses event delegation)...*/
+    // TODO: use jQuer's controls.click instead
     controls.addEventListener('click', function (e) {
+      console.log(e);
       t = e.target;
       if (t.nodeName.toLowerCase() === 'button') {
 
@@ -272,7 +283,10 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
         playEnd(video1, ws1);
         break;
       case 'videoInfo':
-        showVideoData(parsedMessage);
+        currentVideo.isSeekable = parsedMessage.isSeekable;
+        currentVideo.initSeekable = parsedMessage.initSeekable;
+        currentVideo.endSeekable = parsedMessage.endSeekable;
+        currentVideo.videoDuration = parsedMessage.videoDuration;
         break;
       case 'iceCandidate':
         webRtcPeer.addIceCandidate(parsedMessage.candidate, function(error) {
@@ -291,11 +305,14 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
 
         break;
       case 'position':
-        document.getElementById("videoPosition").value = parsedMessage.position;
-        var seekBar = document.getElementById("seek-bar");
-        var videoPosition = document.getElementById("videoPosition").value
-        var duration = document.getElementById("duration").value
-        var seekBarValue = videoPosition/duration * 100
+        //not in need write to container's element
+        //document.getElementById("videoPosition").value = parsedMessage.position;
+        //var videoPosition = document.getElementById("videoPosition").value
+        var videoPosition = parsedMessage.position;
+        //var seekBar = document.getElementById("seek-bar");
+        var seekBar = videoContainer.find(".seek-bar")[0];
+        var duration = currentVideo.videoDuration;
+        var seekBarValue = videoPosition/duration * 100;
         console.log("=== seekBarValue ===", seekBarValue);
         seekBar.value = seekBarValue
 
@@ -450,7 +467,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   }
 
   var doSeek = function (targetWs, targetVideo) {
-    var seekPosition = parseInt(document.getElementById('duration').value * (seekBar.val() / 100));
+    var seekPosition = parseInt(currentVideo.videoDuration * (seekBar.val() / 100));
     seeking = true;
     targetVideo.currentTime = seekPosition;
     if(seekUpdateTimer){
@@ -471,24 +488,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       id : 'getPosition'
     }
     sendMessage(message, targetWs);
-  }
-
-  var showVideoData = function (parsedMessage) {
-    //Show video info
-    isSeekable = parsedMessage.isSeekable;
-    if (isSeekable) {
-      document.getElementById('isSeekable').value = "true";
-      enableButton('#doSeek', 'doSeek()');
-    } else {
-      document.getElementById('isSeekable').value = "false";
-    }
-
-    document.getElementById('initSeek').value = parsedMessage.initSeekable;
-    document.getElementById('endSeek').value = parsedMessage.endSeekable;
-    document.getElementById('duration').value = parsedMessage.videoDuration;
-    // document.getElementById('video').duration=parsedMessage.videoDuration;
-
-    enableButton('#getPosition', 'getPosition()');
   }
 
   var setState = function (nextState) {
