@@ -41,6 +41,12 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
 
     //default player is video1
     var currentVideo = video1;
+    
+    //store video info
+    currentVideo.isSeekable = undefined;
+    currentVideo.initSeekable = undefined;
+    currentVideo.endSeekable = undefined;
+    currentVideo.videoDuration = undefined;
 
     playButton.click(function() {
 
@@ -265,7 +271,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     var wsOnMsg = function(message) {
       var parsedMessage = JSON.parse(message.data);
       console.info('Received message: ' + message.data);
-      console.info(message);
 
       switch (parsedMessage.id) {
       case 'startResponse':
@@ -278,7 +283,11 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
         playEnd(video1, ws1);
         break;
       case 'videoInfo':
-        showVideoData(parsedMessage);
+        //showVideoData(parsedMessage);
+        currentVideo.isSeekable = parsedMessage.isSeekable;
+        currentVideo.initSeekable = parsedMessage.initSeekable;
+        currentVideo.endSeekable = parsedMessage.endSeekable;
+        currentVideo.videoDuration = parsedMessage.videoDuration;
         break;
       case 'iceCandidate':
         webRtcPeer.addIceCandidate(parsedMessage.candidate, function(error) {
@@ -303,10 +312,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
         var videoPosition = parsedMessage.position;
         //var seekBar = document.getElementById("seek-bar");
         var seekBar = videoContainer.find(".seek-bar")[0];
-        // TODO: find out where can find duration value
-        var duration = document.getElementById("duration").value;
-        console.log("=== duration ===");
-        console.log(duration);
+        var duration = currentVideo.videoDuration;
         var seekBarValue = videoPosition/duration * 100;
         console.log("=== seekBarValue ===", seekBarValue);
         seekBar.value = seekBarValue
@@ -462,7 +468,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   }
 
   var doSeek = function (targetWs, targetVideo) {
-    var seekPosition = parseInt(document.getElementById('duration').value * (seekBar.val() / 100));
+    var seekPosition = parseInt(currentVideo.videoDuration * (seekBar.val() / 100));
     seeking = true;
     targetVideo.currentTime = seekPosition;
     if(seekUpdateTimer){
@@ -485,6 +491,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     sendMessage(message, targetWs);
   }
 
+  /*
   var showVideoData = function (parsedMessage) {
     //Show video info
     isSeekable = parsedMessage.isSeekable;
@@ -502,6 +509,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
 
     enableButton('#getPosition', 'getPosition()');
   }
+  */
 
   var setState = function (nextState) {
     switch (nextState) {
