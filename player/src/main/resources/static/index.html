@@ -28,14 +28,7 @@
 <script src="js/player.js"></script>
 <title>Kurento Tutorial: Play of a video through WebRTC</title>
 <style type="text/css" media="screen">
-
-  #video-container{background:#eee;width:400px;height:300px;overflow:hidden;
-         position:relative;margin:2em 0;}
-  #ideo-container span{font-size:20px;color:#666;display:block;padding:2em;}
-  video{width:400px;height:300px;position:absolute;top:0;left:0;}
-
   #change button{width:60px;border:none;background:#333;}
-
 </style>
 </head>
 <body>
@@ -63,7 +56,7 @@
 		<ul></ul>
 	</div>
 
-	<div id="video-container">
+	<div id="video-container-1" class="video-container">
 		<video class="video primary" autoplay width="640px" height="480px"
 			poster="img/webrtc.png" preload="auto"></video>
 		<video class="video slave" autoplay width="640px" height="480px"

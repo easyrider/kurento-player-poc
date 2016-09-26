@@ -1,6 +1,6 @@
 window.onload = function() {
 	var wsUrl = 'wss://' + location.host + '/player';
-	var videoContainerId = "video-container";
+	var videoContainerId = "video-container-1";
 	var fileList = [
 		'http://jenkins.trunk.studio/videotest/video1.mkv',
 		'http://jenkins.trunk.studio/videotest/video2.mkv',
