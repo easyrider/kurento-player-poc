@@ -283,7 +283,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
         playEnd(video1, ws1);
         break;
       case 'videoInfo':
-        //showVideoData(parsedMessage);
         currentVideo.isSeekable = parsedMessage.isSeekable;
         currentVideo.initSeekable = parsedMessage.initSeekable;
         currentVideo.endSeekable = parsedMessage.endSeekable;
@@ -490,26 +489,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     }
     sendMessage(message, targetWs);
   }
-
-  /*
-  var showVideoData = function (parsedMessage) {
-    //Show video info
-    isSeekable = parsedMessage.isSeekable;
-    if (isSeekable) {
-      document.getElementById('isSeekable').value = "true";
-      enableButton('#doSeek', 'doSeek()');
-    } else {
-      document.getElementById('isSeekable').value = "false";
-    }
-
-    document.getElementById('initSeek').value = parsedMessage.initSeekable;
-    document.getElementById('endSeek').value = parsedMessage.endSeekable;
-    document.getElementById('duration').value = parsedMessage.videoDuration;
-    // document.getElementById('video').duration=parsedMessage.videoDuration;
-
-    enableButton('#getPosition', 'getPosition()');
-  }
-  */
 
   var setState = function (nextState) {
     switch (nextState) {
