@@ -63,6 +63,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
         resume(currentSocket)
       }
 
+      /*
       setTimeout(function(){
         console.log("=== start video2 ===");
         start(fileList[1], video2, ws2)
@@ -73,6 +74,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
         video1.style.display = 'none';
         video2.style.display = 'block';
       }, 10000)
+      */
 
 
       // Update the button text to 'Pause'
@@ -480,7 +482,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   var playEnd = function (targetVideo, targetWs) {
     setState(I_CAN_START);
     hideSpinner(targetVideo);
-    stop(targetWs, targetVideo)
+    //stop(targetWs, targetVideo)
     // move to WebSocket action
     //playing += 1;
 
