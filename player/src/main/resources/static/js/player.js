@@ -63,17 +63,17 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
         resume(currentSocket)
       }
 
-      // setTimeout(function(){
-      //   console.log("=== start video2 ===");
-      //   start(fileList[1], video2, ws2)
-      // }, 5000)
-      //
-      // setTimeout(function(){
-      //   console.log("=== show video2 ===");
-      //   video1.style.display = 'none';
-      //   video2.style.display = 'block';
-      // }, 10000)
-      // start(fileList[playing], video2, ws2)
+      setTimeout(function(){
+        console.log("=== start video2 ===");
+        start(fileList[1], video2, ws2)
+      }, 5000)
+
+      setTimeout(function(){
+        console.log("=== show video2 ===");
+        video1.style.display = 'none';
+        video2.style.display = 'block';
+      }, 10000)
+
 
       // Update the button text to 'Pause'
 
@@ -300,12 +300,12 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
         break;
       case 'seek':
         seeking = false;
-        console.log("=== seek seeking ===", seeking);
+        // console.log("=== seek seeking ===", seeking);
         setTimeout(function(){
           seekUpdateTimer = setInterval(seekUpdate, 1000);
         }, "3000")
 
-        console.log (parsedMessage.message);
+        // console.log (parsedMessage.message);
 
         break;
       case 'position':
@@ -313,11 +313,11 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
         var seekBar = videoContainer.find(".seek-bar")[0];
         var duration = currentVideo.videoDuration;
         var seekBarValue = videoPosition/duration * 100;
-        console.log("=== seekBarValue ===", seekBarValue);
+        // console.log("=== seekBarValue ===", seekBarValue);
         seekBar.value = seekBarValue
 
         var left = ( currentVideo.videoDuration - videoPosition ) / 1000;
-        console.log("=== left:"+left.toString()+" ===" )
+        // console.log("=== left:"+left.toString()+" ===" )
         if (left<10 && bufferPrepared==false) {
           // even no next video, still have to mark prepared
           bufferPrepared = true;
@@ -347,7 +347,8 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
         onError('Unrecognized message', parsedMessage);
       }
     }
-    currentSocket.onmessage = wsOnMsg
+    ws1.onmessage = wsOnMsg
+    ws2.onmessage = wsOnMsg
 
   var start = function (sorceUrl, targetVideo, targetWs) {
     // Disable start button
