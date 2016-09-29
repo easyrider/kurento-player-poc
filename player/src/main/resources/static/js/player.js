@@ -1,6 +1,5 @@
 function createVideoPlayer(wsUrl, videoContainerId, fileList){
     var console = new Console();
-    var state = null;
     var isSeekable = false;
 
     var I_CAN_START = 0;
@@ -89,9 +88,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
 
 
   seekBar.change(function() {
-    console.log('=== seekBar Changed!! ===');
-    console.log(currentSocket);
-    console.log(currentVideo);
     doSeek(currentSocket, currentVideo)
   });
 
@@ -311,7 +307,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
             video1.videoDuration = parsedMessage.videoDuration;
             pause(ws1,true);
           }
-          console.log('someThing have to process');
         }
         break;
       case 'iceCandidate':
@@ -346,8 +341,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
 
           // check next video exist
           nextPlaying = playing + 1;
-          //playing += 1;
-
           if(nextPlaying < fileList.length) {
             console.log('less than 10 second, prepare next video!!');
             if (currentUsing==1) {
@@ -364,9 +357,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       case 'iceCandidate':
         break;
       default:
-        if (state == I_AM_STARTING) {
-          setState(I_CAN_START);
-        }
+        //start = false;
         onError('Unrecognized message', parsedMessage);
       }
     }
@@ -380,7 +371,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     if (! seekUpdateTimer) {
       seekUpdateTimer = setInterval(seekUpdate, 1000);
     }
-    setState(I_AM_STARTING);
     showSpinner(targetVideo);
 
     var mode = $('input[name="mode"]:checked').val();
@@ -447,7 +437,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   }
 
   var startResponse = function (message) {
-    setState(I_CAN_STOP);
     console.log('SDP answer received from server. Processing ...');
 
     webRtcPeer.processAnswer(message.sdpAnswer, function(error) {
@@ -491,7 +480,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       window.clearInterval(seekUpdateTimer);
       seekUpdateTimer = null;
     }
-    setState(I_CAN_START);
     if (webRtcPeer) {
       webRtcPeer.dispose();
       webRtcPeer = null;
@@ -524,7 +512,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       resume(currentSocket,true)
       currentVideo.style.display = "";
     } else {
-      setState(I_CAN_START);
       hideSpinner(targetVideo);
       stop(ws1, video1);
       stop(ws2, video2);
@@ -538,9 +525,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   var doSeek = function (targetWs, targetVideo) {
     var seekPosition = parseInt(currentVideo.videoDuration * (seekBar.val() / 100));
     seeking = true;
-    console.log();
-    console.log(seekPosition);
-    console.log(targetVideo.currentTime);
     targetVideo.currentTime = seekPosition;
     if(seekUpdateTimer){
       window.clearInterval(seekUpdateTimer);
@@ -562,43 +546,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     sendMessage(message, targetWs);
   }
 
-  var setState = function (nextState) {
-    switch (nextState) {
-    case I_CAN_START:
-      enableButton('#start', 'start()');
-      disableButton('#pause');
-      disableButton('#stop');
-      enableButton('#videourl');
-      enableButton("[name='mode']");
-      disableButton('#getPosition');
-      disableButton('#doSeek');
-      break;
-
-    case I_CAN_STOP:
-      disableButton('#start');
-      enableButton('#pause', 'pause()');
-      enableButton('#stop', 'stop()');
-      disableButton('#videourl');
-      disableButton("[name='mode']");
-      break;
-
-    case I_AM_STARTING:
-      disableButton('#start');
-      disableButton('#pause');
-      disableButton('#stop');
-      disableButton('#videourl');
-      disableButton('#getPosition');
-      disableButton('#doSeek');
-      disableButton("[name='mode']");
-      break;
-
-    default:
-      onError('Unknown state ' + nextState);
-      return;
-    }
-    state = nextState;
-  }
-
   var sendMessage = function (message, targetWs) {
     var jsonMessage = JSON.stringify(message);
     console.log('Senging message: ' + jsonMessage);
@@ -606,7 +553,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     targetWs.send(jsonMessage);
   }
 
-  var togglePause = function (Status) {
+  var togglePause = function () {
     var pauseText = playButton.text();
     if (pauseText == "Play") {
       playButton.text("Pause");
