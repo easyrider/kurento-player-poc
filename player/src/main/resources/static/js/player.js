@@ -50,7 +50,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   currentVideo.videoDuration = undefined;
 
   playButton.click(function() {
-
     var actionName = playButton.text();
     if (actionName == "Play") {
       // Play the video
@@ -283,8 +282,9 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       break;
     case 'iceCandidate':
       webRtcPeer.addIceCandidate(parsedMessage.candidate, function(error) {
-        if (error)
+        if (error) {
           return console.error('Error adding candidate: ' + error);
+        }
       });
       break;
     case 'seek':
@@ -333,7 +333,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       onError('Unrecognized message', parsedMessage);
     }
   }
-  // register event when WebSocket send message
+  // register event when server send message over WebSocket
   ws1.onmessage = wsOnMsg;
   ws2.onmessage = wsOnMsg;
 
@@ -373,8 +373,9 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     console.info('User media constraints' + userMediaConstraints);
 
     webRtcPeer = new kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options, function(error) {
-      if (error)
+      if (error) {
         return console.error(error);
+      }
 
       webRtcPeer.generateOffer(function(error, offerSdp){
         onOffer(error, offerSdp, sorceUrl, targetWs)
@@ -383,7 +384,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   }
 
   var onOffer = function (error, offerSdp, sorceUrl, targetWs) {
-
     if (error)
       return console.error('Error generating the offer');
 
