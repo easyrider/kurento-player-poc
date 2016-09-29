@@ -10,7 +10,7 @@ window.onload = function() {
 
   videoContainerId = 'video-2';
   fileList = [
-		'https://home.dd-han.tw/index/ScreenRecord_2016-08-06-03-45-23.mp4'
+		'http://59.127.83.225/index/ScreenRecord_2016-08-06-03-45-23.mp4'
   ]
   createVideoPlayer(wsUrl, videoContainerId, fileList);
 }

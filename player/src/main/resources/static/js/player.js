@@ -135,20 +135,20 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       canvas = document.createElement("canvas");
       var context = canvas.getContext('2d');
 
-      var w = currentVideo.clientWidth * size.value;
-      var h = currentVideo.clientHeight * size.value;
+      var w = currentVideo.videoWidth * size.value;
+      var h = currentVideo.videoHeight * size.value;
       canvas.width = w;
       canvas.height = h;
-      var fullW = zoomScale * size.value * currentVideo.clientWidth;
-      var fullH = zoomScale * size.value * currentVideo.clientHeight;
+      var fullW = zoomScale * size.value * currentVideo.videoWidth;
+      var fullH = zoomScale * size.value * currentVideo.videoHeight;
 
-      var zoomW = (zoomScale * currentVideo.clientWidth);
-      var zoomH = (zoomScale * currentVideo.clientHeight);
+      var zoomW = (zoomScale * currentVideo.videoWidth);
+      var zoomH = (zoomScale * currentVideo.videoHeight);
 
-      var scaleX = zoomScale === 1 ? 0 : (zoomW - currentVideo.clientWidth) / 2;
-      var scaleY = zoomScale === 1 ? 0 : (zoomH - currentVideo.clientHeight) / 2;
-      var scaleW = currentVideo.clientWidth / zoomScale;
-      var scaleH = currentVideo.clientHeight / zoomScale;
+      var scaleX = zoomScale === 1 ? 0 : (zoomW - currentVideo.videoWidth) / 2;
+      var scaleY = zoomScale === 1 ? 0 : (zoomH - currentVideo.videoHeight) / 2;
+      var scaleW = currentVideo.videoWidth / zoomScale;
+      var scaleH = currentVideo.videoHeight / zoomScale;
 
       console.log('drawImage params=>', scaleX,scaleY,scaleW,scaleH,0,0,fullW,fullH);
 

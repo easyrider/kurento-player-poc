@@ -80,3 +80,7 @@ button:hover {
 .volume-bar {
 	width: 60px;
 }
+
+#image {
+  max-width: 600px
+}
