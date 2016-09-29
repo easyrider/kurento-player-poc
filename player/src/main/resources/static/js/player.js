@@ -8,7 +8,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     var I_AM_STARTING = 2;
     var seekUpdateTimer = {};
     var seekUpdate = function() {
-      if(!seeking) getPosition(ws1)
+      if(!seeking) getPosition(currentSocket)
     }
 
     var seeking = false
@@ -89,6 +89,9 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
 
 
   seekBar.change(function() {
+    console.log('=== seekBar Changed!! ===');
+    console.log(currentSocket);
+    console.log(currentVideo);
     doSeek(currentSocket, currentVideo)
   });
 
@@ -289,10 +292,25 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
         playEnd(currentVideo, currentSocket);
         break;
       case 'videoInfo':
-        currentVideo.isSeekable = parsedMessage.isSeekable;
-        currentVideo.initSeekable = parsedMessage.initSeekable;
-        currentVideo.endSeekable = parsedMessage.endSeekable;
-        currentVideo.videoDuration = parsedMessage.videoDuration;
+        if (bufferPrepared==false) {
+          currentVideo.isSeekable = parsedMessage.isSeekable;
+          currentVideo.initSeekable = parsedMessage.initSeekable;
+          currentVideo.endSeekable = parsedMessage.endSeekable;
+          currentVideo.videoDuration = parsedMessage.videoDuration;
+        } else {
+          if (currentUsing==1) {
+            video2.isSeekable = parsedMessage.isSeekable;
+            video2.initSeekable = parsedMessage.initSeekable;
+            video2.endSeekable = parsedMessage.endSeekable;
+            video2.videoDuration = parsedMessage.videoDuration;
+          } else {
+            video1.isSeekable = parsedMessage.isSeekable;
+            video1.initSeekable = parsedMessage.initSeekable;
+            video1.endSeekable = parsedMessage.endSeekable;
+            video1.videoDuration = parsedMessage.videoDuration;
+          }
+          console.log('someThing have to process');
+        }
         break;
       case 'iceCandidate':
         webRtcPeer.addIceCandidate(parsedMessage.candidate, function(error) {
@@ -349,8 +367,8 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
         onError('Unrecognized message', parsedMessage);
       }
     }
-    ws1.onmessage = wsOnMsg
-    ws2.onmessage = wsOnMsg
+    ws1.onmessage = wsOnMsg;
+    ws2.onmessage = wsOnMsg;
 
   var start = function (sorceUrl, targetVideo, targetWs) {
     // Disable start button
@@ -480,16 +498,12 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   }
 
   var playEnd = function (targetVideo, targetWs) {
-    setState(I_CAN_START);
-    hideSpinner(targetVideo);
-    //stop(targetWs, targetVideo)
     // move to WebSocket action
     //playing += 1;
 
     //start(fileList[playing], targetVideo, targetWs);
     if(playing < fileList.length){
       //switch video player here
-      console.log('here should do something')
       currentVideo.style.display = "none";
       if (currentUsing==1) {
         currentUsing = 2;
@@ -501,15 +515,21 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
         currentSocket = ws1;
       }
       currentVideo.style.display = "";
-
+    } else {
+      setState(I_CAN_START);
+      hideSpinner(targetVideo);
+      stop(ws1, video1);
+      stop(ws2, video2);
     }
-    console.log('switch video player to video'+currentUsing.toString());
-    console.log(currentVideo);
+    bufferPrepared = false;
   }
 
   var doSeek = function (targetWs, targetVideo) {
     var seekPosition = parseInt(currentVideo.videoDuration * (seekBar.val() / 100));
     seeking = true;
+    console.log();
+    console.log(seekPosition);
+    console.log(targetVideo.currentTime);
     targetVideo.currentTime = seekPosition;
     if(seekUpdateTimer){
       window.clearInterval(seekUpdateTimer);
