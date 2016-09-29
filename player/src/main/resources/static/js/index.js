@@ -8,13 +8,11 @@ window.onload = function() {
 	]
 	createVideoPlayer(wsUrl, videoContainerId, fileList);
 
-  /*
   videoContainerId = 'video-2';
   fileList = [
-		'http://jenkins.trunk.studio/videotest/video2.mkv'
+		'https://home.dd-han.tw/index/ScreenRecord_2016-08-06-03-45-23.mp4'
   ]
   createVideoPlayer(wsUrl, videoContainerId, fileList);
-  */
 }
 
 window.onbeforeunload = function() {

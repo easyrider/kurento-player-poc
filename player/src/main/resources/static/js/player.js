@@ -345,16 +345,17 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
           bufferPrepared = true;
 
           // check next video exist
-          playing += 1;
+          nextPlaying = playing + 1;
+          //playing += 1;
 
           if(playing < fileList.length) {
             console.log('less than 10 second, prepare next video!!');
             if (currentUsing==1) {
               console.log('now using video1, prepare next on video2')
-              start(fileList[playing], video2, ws2);
+              start(fileList[nextPlaying], video2, ws2);
             } else {
               console.log('now using video2, prepare next on video1')
-              start(fileList[playing], video1, ws1);
+              start(fileList[nextPlaying], video1, ws1);
             }
           }
         }
@@ -505,10 +506,11 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
 
   var playEnd = function (targetVideo, targetWs) {
     // move to WebSocket action
-    //playing += 1;
+    playing += 1;
 
     //start(fileList[playing], targetVideo, targetWs);
     if(playing < fileList.length){
+      console.log('switching video ')
       //switch video player here
       currentVideo.style.display = "none";
       if (currentUsing==1) {
