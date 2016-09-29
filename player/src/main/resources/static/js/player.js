@@ -303,11 +303,13 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
             video2.initSeekable = parsedMessage.initSeekable;
             video2.endSeekable = parsedMessage.endSeekable;
             video2.videoDuration = parsedMessage.videoDuration;
+            pause(ws2,true);
           } else {
             video1.isSeekable = parsedMessage.isSeekable;
             video1.initSeekable = parsedMessage.initSeekable;
             video1.endSeekable = parsedMessage.endSeekable;
             video1.videoDuration = parsedMessage.videoDuration;
+            pause(ws1,true);
           }
           console.log('someThing have to process');
         }
@@ -451,14 +453,16 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     });
   }
 
-  var pause = function (targetWs) {
-    togglePause()
-    console.log('Stopping video ...');
-    playButton.text("Play");
-
-    if(seekUpdateTimer){
-      window.clearInterval(seekUpdateTimer);
-      seekUpdateTimer = null;
+  var pause = function (targetWs,wsOnly) {
+    if (wsOnly===undefined||wsOnly===false) {
+      togglePause()
+      console.log('Stopping video ...');
+      playButton.text("Play");
+  
+      if(seekUpdateTimer){
+        window.clearInterval(seekUpdateTimer);
+        seekUpdateTimer = null;
+      }
     }
     console.log('Pausing video ...');
     var message = {
@@ -467,10 +471,12 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     sendMessage(message, targetWs);
   }
 
-  var resume = function (targetWs) {
-    playButton.text("Pause");
-    seekUpdateTimer = setInterval(seekUpdate, 1000);
-    togglePause()
+  var resume = function (targetWs,wsOnly) {
+    if (wsOnly===undefined||wsOnly===false) {
+      playButton.text("Pause");
+      seekUpdateTimer = setInterval(seekUpdate, 1000);
+      togglePause()
+    }
     console.log('Resuming video ...');
     var message = {
       id : 'resume'
@@ -514,6 +520,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
         currentVideo = video1;
         currentSocket = ws1;
       }
+      resume(currentSocket,true)
       currentVideo.style.display = "";
     } else {
       setState(I_CAN_START);
