@@ -377,7 +377,9 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     // Disable start button
     console.log("=== sorceUrl ===", sorceUrl);
     playButton.text("Pause");
-    seekUpdateTimer = setInterval(seekUpdate, 1000);
+    if (! seekUpdateTimer) {
+      seekUpdateTimer = setInterval(seekUpdate, 1000);
+    }
     setState(I_AM_STARTING);
     showSpinner(targetVideo);
 
