@@ -14,9 +14,8 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   var started = false;
 
   var videoContainer = $( "#"+videoContainerId );
-  // don't know why webRtcPeer common on video1 and video2, but still working
-  // but it cause can't stop video after current Video end
-  var webRtcPeer;
+  var webRtcPeer1;
+  var webRtcPeer2;
 
   var ws1 = new WebSocket(wsUrl);
   var ws2 = new WebSocket(wsUrl);
@@ -39,6 +38,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
 
   //default player is video1
   var currentUsing = 1;
+  var currentProcess = 1;
   var currentVideo = video1;
   var currentSocket = ws1;
   var bufferPrepared = false;
@@ -55,9 +55,9 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       // Play the video
       if(!started){
         started = true;
-        start(fileList[0], currentVideo, currentSocket)
+        start(fileList[0], currentVideo, currentSocket);
       } else {
-        resume(currentSocket)
+        resume(currentSocket);
       }
     } else {
       // Pause the video
@@ -75,13 +75,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   });
 
   fullScreenButton.click(function() {
-    if (currentVideo.requestFullscreen) {
-      currentVideo.requestFullscreen();
-    } else if (currentVideo.mozRequestFullScreen) {
-      currentVideo.mozRequestFullScreen(); // Firefox
-    } else if (currentVideo.webkitRequestFullscreen) {
-      currentVideo.webkitRequestFullscreen(); // Chrome and Safari
-    }
+    toggleFullscreen();
   });
   // bar end
 
@@ -271,21 +265,33 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
           video2.endSeekable = parsedMessage.endSeekable;
           video2.videoDuration = parsedMessage.videoDuration;
           pause(ws2,true);
+          // TODO: should seek to head, or it will lose 1second video
+          // issue #17
         } else {
           video1.isSeekable = parsedMessage.isSeekable;
           video1.initSeekable = parsedMessage.initSeekable;
           video1.endSeekable = parsedMessage.endSeekable;
           video1.videoDuration = parsedMessage.videoDuration;
           pause(ws1,true);
+          // TODO: should seek to head, or it will lose 1second video
+          // issue #17
         }
       }
       break;
     case 'iceCandidate':
-      webRtcPeer.addIceCandidate(parsedMessage.candidate, function(error) {
-        if (error) {
-          return console.error('Error adding candidate: ' + error);
-        }
-      });
+      if (currentProcess==1) {
+        webRtcPeer1.addIceCandidate(parsedMessage.candidate, function(error) {
+          if (error) {
+            return console.error('Error adding candidate: ' + error);
+          }
+        });
+      } else {
+        webRtcPeer2.addIceCandidate(parsedMessage.candidate, function(error) {
+          if (error) {
+            return console.error('Error adding candidate: ' + error);
+          }
+        });
+      }
       break;
     case 'seek':
       seeking = false;
@@ -317,10 +323,12 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
           console.log('less than 10 second, prepare next video!!');
           if (currentUsing==1) {
             console.log('now using video1, prepare next on video2')
-            start(fileList[nextPlaying], video2, ws2);
+            currentProcess = 2;
+            start(fileList[nextPlaying], video2, ws2, true);
           } else {
             console.log('now using video2, prepare next on video1')
-            start(fileList[nextPlaying], video1, ws1);
+            currentProcess = 1;
+            start(fileList[nextPlaying], video1, ws1, true);
           }
         }
       }
@@ -338,10 +346,12 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   ws2.onmessage = wsOnMsg;
 
   // actually video control functions
-  var start = function (sorceUrl, targetVideo, targetWs) {
-    // Disable start button
-    console.log("=== sorceUrl ===", sorceUrl);
-    togglePause();
+  var start = function (sorceUrl, targetVideo, targetWs, noToggle) {
+    if (noToggle===undefined||noToggle==false) {
+      // Disable start button
+      console.log("=== sorceUrl ===", sorceUrl);
+      togglePause();
+    }
     if (! seekUpdateTimer) {
       seekUpdateTimer = setInterval(seekUpdate, 1000);
     }
@@ -372,15 +382,27 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
 
     console.info('User media constraints' + userMediaConstraints);
 
-    webRtcPeer = new kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options, function(error) {
-      if (error) {
-        return console.error(error);
-      }
+    if (currentProcess==1) {
+      webRtcPeer1 = new kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options, function(error) {
+        if (error) {
+          return console.error(error);
+        }
 
-      webRtcPeer.generateOffer(function(error, offerSdp){
-        onOffer(error, offerSdp, sorceUrl, targetWs)
+        webRtcPeer1.generateOffer(function(error, offerSdp){
+          onOffer(error, offerSdp, sorceUrl, targetWs)
+        });
       });
-    });
+    } else {
+      webRtcPeer2 = new kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options, function(error) {
+        if (error) {
+          return console.error(error);
+        }
+
+        webRtcPeer2.generateOffer(function(error, offerSdp){
+          onOffer(error, offerSdp, sorceUrl, targetWs)
+        });
+      });
+    }
   }
 
   var onOffer = function (error, offerSdp, sorceUrl, targetWs) {
@@ -413,7 +435,13 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   var startResponse = function (message) {
     console.log('SDP answer received from server. Processing ...');
 
-    webRtcPeer.processAnswer(message.sdpAnswer, function(error) {
+    var tarWebRtcPeer = undefined;
+    if ( currentProcess==1 ) {
+      tarWebRtcPeer = webRtcPeer1;
+    } else {
+      tarWebRtcPeer = webRtcPeer2;
+    }
+    tarWebRtcPeer.processAnswer(message.sdpAnswer, function(error) {
       if (error)
         return console.error(error);
     });
@@ -423,7 +451,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     if (wsOnly===undefined||wsOnly===false) {
       togglePause();
       console.log('Stopping video ...');
-  
       if(seekUpdateTimer){
         window.clearInterval(seekUpdateTimer);
         seekUpdateTimer = null;
@@ -448,12 +475,20 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     sendMessage(message, targetWs);
   }
 
-  var stop = function (targetWs, targetVideo) {
+  var stop = function (targetWs, targetVideo, keepSeekUpdate) {
     console.log('Stopping video ...');
-    if(seekUpdateTimer){
+    if(keepSeekUpdate===undefined||keepSeekUpdate==false) {
       window.clearInterval(seekUpdateTimer);
       seekUpdateTimer = null;
     }
+
+    var webRtcPeer = undefined;
+    if (currentUsing==1) {
+      webRtcPeer = webRtcPeer1;
+    } else {
+      webRtcPeer = webRtcPeer2;
+    }
+    console.log(webRtcPeer)
     if (webRtcPeer) {
       webRtcPeer.dispose();
       webRtcPeer = null;
@@ -471,9 +506,17 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
 
     //start(fileList[playing], targetVideo, targetWs);
     if(playing < fileList.length){
-      console.log('switching video ')
-      //switch video player here
+      console.log('switching video');
+      // check video fullscreen or not
+      var fullscreen = fetchFullscreen();
+      if (fullscreen) {
+        console.log('already fullscreen!!');
+        toggleFullscreen();
+      }
+      
+      // switch
       currentVideo.style.display = "none";
+      stop(currentSocket,currentVideo,true);
       if (currentUsing==1) {
         currentUsing = 2;
         currentVideo = video2;
@@ -485,11 +528,16 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       }
       resume(currentSocket,true)
       currentVideo.style.display = "";
+      if (fullscreen) {
+        console.log('resume fullscreen');
+        toggleFullscreen();
+      }
     } else {
       hideSpinner(targetVideo);
       stop(ws1, video1);
       stop(ws2, video2);
       started = false;
+      playing = 0;
       togglePause();
     }
     bufferPrepared = false;
@@ -531,6 +579,42 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       playButton.text("Pause");
     } else {
       playButton.text("Play");
+    }
+  }
+
+  var fetchFullscreen = function () {
+    if ( document.fullscreenElement ||
+      document.webkitFullscreenElement ||
+      document.mozFullScreenElement ||
+      document.msFullscreenElement ) {
+        return true;
+    } else {
+      return false;
+    }
+    
+  }
+
+  var toggleFullscreen = function () {
+    if ( fetchFullscreen() ) {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+        }
+    } else {
+      if (currentVideo.requestFullscreen) {
+        currentVideo.requestFullscreen();
+      } else if (currentVideo.mozRequestFullScreen) {
+        currentVideo.mozRequestFullScreen(); // Firefox
+      } else if (currentVideo.webkitRequestFullscreen) {
+        currentVideo.webkitRequestFullscreen(); // Chrome and Safari
+      } else if (currentVideo.msRequestFullscreen) {
+        currentVideo.msRequestFullscreen(); // IE11
+      }
     }
   }
 
