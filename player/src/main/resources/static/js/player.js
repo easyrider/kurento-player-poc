@@ -376,7 +376,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   var start = function (sorceUrl, targetVideo, targetWs) {
     // Disable start button
     console.log("=== sorceUrl ===", sorceUrl);
-    playButton.text("Pause");
+    togglePause();
     if (! seekUpdateTimer) {
       seekUpdateTimer = setInterval(seekUpdate, 1000);
     }
@@ -458,9 +458,8 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
 
   var pause = function (targetWs,wsOnly) {
     if (wsOnly===undefined||wsOnly===false) {
-      togglePause()
+      togglePause();
       console.log('Stopping video ...');
-      playButton.text("Play");
   
       if(seekUpdateTimer){
         window.clearInterval(seekUpdateTimer);
@@ -476,9 +475,8 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
 
   var resume = function (targetWs,wsOnly) {
     if (wsOnly===undefined||wsOnly===false) {
-      playButton.text("Pause");
+      togglePause();
       seekUpdateTimer = setInterval(seekUpdate, 1000);
-      togglePause()
     }
     console.log('Resuming video ...');
     var message = {
@@ -530,8 +528,11 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       hideSpinner(targetVideo);
       stop(ws1, video1);
       stop(ws2, video2);
+      started = false;
+      togglePause();
     }
     bufferPrepared = false;
+
   }
 
   var doSeek = function (targetWs, targetVideo) {
@@ -605,16 +606,16 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     targetWs.send(jsonMessage);
   }
 
-  var togglePause = function () {
-    var pauseText = $("#pause-text").text();
-    if (pauseText == " Resume ") {
-      $("#pause-text").text(" Pause ");
-      $("#pause-icon").attr('class', 'glyphicon glyphicon-pause');
-      $("#pause").attr('onclick', "pause()");
+  var togglePause = function (Status) {
+    var pauseText = playButton.text();
+    if (pauseText == "Play") {
+      playButton.text("Pause");
+      //$("#pause-icon").attr('class', 'glyphicon glyphicon-pause');
+      //$("#pause").attr('onclick', "pause()");
     } else {
-      $("#pause-text").text(" Resume ");
-      $("#pause-icon").attr('class', 'glyphicon glyphicon-play');
-      $("#pause").attr('onclick', "resume()");
+      playButton.text("Play");
+      //$("#pause-icon").attr('class', 'glyphicon glyphicon-play');
+      //$("#pause").attr('onclick', "resume()");
     }
   }
 
