@@ -348,7 +348,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
           nextPlaying = playing + 1;
           //playing += 1;
 
-          if(playing < fileList.length) {
+          if(nextPlaying < fileList.length) {
             console.log('less than 10 second, prepare next video!!');
             if (currentUsing==1) {
               console.log('now using video1, prepare next on video2')
@@ -505,7 +505,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   }
 
   var playEnd = function (targetVideo, targetWs) {
-    // move to WebSocket action
     playing += 1;
 
     //start(fileList[playing], targetVideo, targetWs);
