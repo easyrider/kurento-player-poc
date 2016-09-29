@@ -128,7 +128,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       screenshotsize.innerHTML = s;
     }, false);
 
-    var screenshot = videoContainer.find("#screenshot-button");
+    var screenshot = videoContainer.find(".screenshot-button");
     screenshot.click(function() {
 
       //grab current video frame and put it into a canvas element, consider screenshotsize
