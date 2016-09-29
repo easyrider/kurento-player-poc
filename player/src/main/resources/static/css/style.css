@@ -1,23 +1,10 @@
 .video-container {
-	width: 640px;
-	height: 480px;
-	position: relative;
-}
-
-.video-container {
   background: #eee;
   width: 400px;
   height: 300px;
   overflow: hidden;
   position: relative;
   margin: 2em 0;
-}
-
-.video-container span {
-  font-size: 20px;
-  color: #666;
-  display: block;
-  padding: 2em;
 }
 
 video{
@@ -74,7 +61,7 @@ button:hover {
 }
 
 .seek-bar {
-	width: 360px;
+	width: 200px;
 }
 
 .volume-bar {

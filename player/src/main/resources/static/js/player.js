@@ -10,7 +10,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   var seeking = false
   var playing = 0;
 
-  var zoomScale = 1;
   var started = false;
 
   var videoContainer = $( "#"+videoContainerId );
@@ -85,14 +84,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     //SCREENSHOTS
     //for screenshot options and creation
     var image = $('#image')[0];
-    var size = videoContainer.find(".size")[0];
-    var screenshotsize = videoContainer.find(".screenshotsize")[0];
-
-    //control size of screenshot
-    size.addEventListener('change', function(){
-      var s = this.value;
-      screenshotsize.innerHTML = s;
-    }, false);
 
     var screenshot = videoContainer.find(".screenshot-button");
     screenshot.click(function() {
@@ -101,24 +92,21 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       canvas = document.createElement("canvas");
       var context = canvas.getContext('2d');
 
-      var w = currentVideo.videoWidth * size.value;
-      var h = currentVideo.videoHeight * size.value;
-      canvas.width = w;
-      canvas.height = h;
-      var fullW = zoomScale * size.value * currentVideo.videoWidth;
-      var fullH = zoomScale * size.value * currentVideo.videoHeight;
+      var cropX = 0;  //從左邊裁調多少px
+      var cropY = 0;  //從上面裁調多少px
+      var cropW = currentVideo.videoWidth;  //上面裁切後，取多少寬度
+      var cropH = currentVideo.videoHeight; //上面裁切後，取多少高度
+      var fullW = currentVideo.videoWidth;  //上面裁切都結束後，最後輸出的寬度
+      var fullH = currentVideo.videoHeight; //上面裁切都結束後，最後輸出的高度
 
-      var zoomW = (zoomScale * currentVideo.videoWidth);
-      var zoomH = (zoomScale * currentVideo.videoHeight);
+      //canvas's size, or after all, it will be crop again
+      canvas.width = fullW;
+      canvas.height = fullH;
 
-      var scaleX = zoomScale === 1 ? 0 : (zoomW - currentVideo.videoWidth) / 2;
-      var scaleY = zoomScale === 1 ? 0 : (zoomH - currentVideo.videoHeight) / 2;
-      var scaleW = currentVideo.videoWidth / zoomScale;
-      var scaleH = currentVideo.videoHeight / zoomScale;
+      console.log('drawImage params=>', cropX,cropY,cropW,cropH,0,0,fullW,fullH);
 
-      console.log('drawImage params=>', scaleX,scaleY,scaleW,scaleH,0,0,fullW,fullH);
-
-      context.drawImage(currentVideo,scaleX,scaleY,scaleW,scaleH,0,0,fullW,fullH);
+      //guide: http://www.w3schools.com/tags/canvas_drawimage.asp
+      context.drawImage(currentVideo,cropX,cropY,cropW,cropH,0,0,fullW,fullH);
 
       //lets make a screenshot
       image.src = canvas.toDataURL();
@@ -231,7 +219,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
           v.style[prop] = 'rotate(' + rotate + 'deg) scale(' + zoom + ')';
           break;
         }
-        zoomScale = zoom;
         e.preventDefault();
       }
     }, false);
@@ -544,6 +531,10 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   }
 
   var doSeek = function (targetWs, targetVideo) {
+    // prevent user set seekbar before video load
+    if (currentVideo.videoDuration===undefined) {
+      return 0;
+    }
     var seekPosition = parseInt(currentVideo.videoDuration * (seekBar.val() / 100));
     seeking = true;
     targetVideo.currentTime = seekPosition;
