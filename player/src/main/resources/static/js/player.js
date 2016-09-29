@@ -6,7 +6,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     var I_CAN_START = 0;
     var I_CAN_STOP = 1;
     var I_AM_STARTING = 2;
-    var seekUpdateTimer = {};
+    var seekUpdateTimer = undefined;
     var seekUpdate = function() {
       if(!seeking) getPosition(currentSocket)
     }
