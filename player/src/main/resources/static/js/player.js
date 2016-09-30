@@ -1,13 +1,16 @@
 function createVideoPlayer(wsUrl, videoContainerId, fileList){
   var console = new Console();
-  var isSeekable = false;
 
   var seekUpdateTimer = undefined;
   var seekUpdate = function() {
-    if(!seeking) getPosition(currentSocket)
+    if (!currentVideo.isLive && !seeking) { 
+      getPosition(currentSocket);
+    } else {
+      console.log('live video, don\' need getPosition');
+    }
   }
 
-  var seeking = false
+  var seeking = false;
   var playing = 0;
   var started = false;
   var videoAdjust = {
@@ -40,10 +43,11 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   var bufferPrepared = false;
 
   //store video info
-  currentVideo.isSeekable = undefined;
-  currentVideo.initSeekable = undefined;
-  currentVideo.endSeekable = undefined;
+  //currentVideo.isSeekable = undefined;
+  //currentVideo.initSeekable = undefined;
+  //currentVideo.endSeekable = undefined;
   currentVideo.videoDuration = undefined;
+  currentVideo.isNotLive = undefined;
 
   var screenshotImage = $("#image");
 
@@ -216,29 +220,32 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       playEnd(currentVideo, currentSocket);
       break;
     case 'videoInfo':
+      // just load video
       if (bufferPrepared==false) {
-        currentVideo.isSeekable = parsedMessage.isSeekable;
-        currentVideo.initSeekable = parsedMessage.initSeekable;
-        currentVideo.endSeekable = parsedMessage.endSeekable;
-        currentVideo.videoDuration = parsedMessage.videoDuration;
+        var targetVideo = currentVideo;
+        var targetWs = currentSocket;
+      // preload video for gpaless play
       } else {
-        if (currentUsing==1) {
-          video2.isSeekable = parsedMessage.isSeekable;
-          video2.initSeekable = parsedMessage.initSeekable;
-          video2.endSeekable = parsedMessage.endSeekable;
-          video2.videoDuration = parsedMessage.videoDuration;
-          pause(ws2,true);
-          // TODO: should seek to head, or it will lose 1second video
-          // issue #17
+        if ( currentUsing==1 ) {
+          var targetVideo = video2;
+          var targetWs = ws2;
         } else {
-          video1.isSeekable = parsedMessage.isSeekable;
-          video1.initSeekable = parsedMessage.initSeekable;
-          video1.endSeekable = parsedMessage.endSeekable;
-          video1.videoDuration = parsedMessage.videoDuration;
-          pause(ws1,true);
-          // TODO: should seek to head, or it will lose 1second video
-          // issue #17
+          var targetVideo = video1;
+          var targetWs = ws1;
         }
+        pause(targetWs,true);
+        sendSeek(targetWs,targetVideo,0);
+      }
+      // live RTMP, isSeekable still true 
+      //targetVideo.isSeekable = parsedMessage.isSeekable;
+      //targetVideo.initSeekable = parsedMessage.initSeekable;
+      //targetVideo.endSeekable = parsedMessage.endSeekable;
+      targetVideo.videoDuration = parsedMessage.videoDuration;
+      targetVideo.isNotLive = ( parsedMessage.isSeekable || parsedMessage.videoDuration==0 );
+      if (targetVideo.isNotLive) {
+        console.log('seekbar should show')
+      } else {
+        console.log('seekbar should hide')
       }
       break;
     case 'iceCandidate':
@@ -258,13 +265,14 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       break;
     case 'seek':
       seeking = false;
-      // console.log("=== seek seeking ===", seeking);
-      setTimeout(function(){
-        seekUpdateTimer = setInterval(seekUpdate, 1000);
-      }, "3000")
-
-      // console.log (parsedMessage.message);
-
+      if (parsedMessage.message == 'success') {
+        // console.log("=== seek seeking ===", seeking);
+        setTimeout(function(){
+          seekUpdateTimer = setInterval(seekUpdate, 1000);
+        }, "3000")
+      } else {
+        console.log('seek failed')
+      }
       break;
     case 'position':
       var videoPosition = parsedMessage.position;
@@ -519,7 +527,10 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       window.clearInterval(seekUpdateTimer);
       seekUpdateTimer = null;
     }
+    sendSeek(targetWs, targetVideo, seekPosition);
+  }
 
+  var sendSeek = function (targetWs, targetVideo, seekPosition) {
     var message = {
       id : 'doSeek',
       position: seekPosition
