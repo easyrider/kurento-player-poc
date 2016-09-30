@@ -70,6 +70,10 @@ button.close {
 button.text:hover {
 	cursor: default;
 }
+
+button.play {
+  width: 48px;
+}
 .seek-bar {
 	width: 200px;
 }

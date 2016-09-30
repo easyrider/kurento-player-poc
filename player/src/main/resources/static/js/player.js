@@ -234,8 +234,11 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
           var targetVideo = video1;
           var targetWs = ws1;
         }
-        pause(targetWs,true);
-        sendSeek(targetWs,targetVideo,0);
+        targetVideo.isNotLive = ( parsedMessage.isSeekable && parsedMessage.videoDuration>0 );
+        if (targetVideo.isNotLive) {
+          pause(targetWs,true);
+          sendSeek(targetWs,targetVideo,0);
+        }
       }
       // live RTMP, isSeekable still true 
       //targetVideo.isSeekable = parsedMessage.isSeekable;
@@ -266,11 +269,9 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       break;
     case 'seek':
       seeking = false;
-      if (parsedMessage.message == 'success') {
+      if (parsedMessage.message == 'success' ) {
         // console.log("=== seek seeking ===", seeking);
-        setTimeout(function(){
-          seekUpdateTimer = setInterval(seekUpdate, 1000);
-        }, "3000")
+        toggleSeekTimer(true);
       } else {
         console.log('seek failed')
       }
@@ -324,9 +325,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       console.log("=== sorceUrl ===", sorceUrl);
       togglePause();
     }
-    if (! seekUpdateTimer) {
-      seekUpdateTimer = setInterval(seekUpdate, 1000);
-    }
+    toggleSeekBar(true);
     showSpinner(targetVideo);
 
     var mode = $('input[name="mode"]:checked').val();
@@ -424,10 +423,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     if (wsOnly===undefined||wsOnly===false) {
       togglePause();
       console.log('Stopping video ...');
-      if(seekUpdateTimer){
-        window.clearInterval(seekUpdateTimer);
-        seekUpdateTimer = null;
-      }
+      toggleSeekTimer(false);
     }
     console.log('Pausing video ...');
     var message = {
@@ -439,7 +435,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   var resume = function (targetWs,wsOnly) {
     if (wsOnly===undefined||wsOnly===false) {
       togglePause();
-      seekUpdateTimer = setInterval(seekUpdate, 1000);
+      toggleSeekTimer(true);
     }
     console.log('Resuming video ...');
     var message = {
@@ -451,8 +447,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   var stop = function (targetWs, targetVideo, keepSeekUpdate) {
     console.log('Stopping video ...');
     if(keepSeekUpdate===undefined||keepSeekUpdate==false) {
-      window.clearInterval(seekUpdateTimer);
-      seekUpdateTimer = null;
+      toggleSeekTimer(false);
     }
 
     var webRtcPeer = undefined;
@@ -499,21 +494,22 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
         currentVideo = video1;
         currentSocket = ws1;
       }
-      // hide old video
       currentVideo.style.display = "";
 
+      // another video may start or not
       if (currentVideo.started) {
-        // video already preload
         resume(currentSocket,true);
       } else {
-        // video not preload
         start(fileList[playing], currentVideo, currentSocket);
       }
+
+      // restore adjust
       adjustVideo();
       if (fullscreen) {
         console.log('resume fullscreen');
         toggleFullscreen();
       }
+    // playlist end
     } else {
       hideSpinner(targetVideo);
       stop(ws1, video1);
@@ -527,16 +523,13 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
 
   var doSeek = function (targetWs, targetVideo) {
     // prevent user set seekbar before video load
-    if (currentVideo.videoDuration===undefined) {
+    if (currentVideo.videoDuration===undefined || !currentVideo.isNotLive) {
       return 0;
     }
     var seekPosition = parseInt(currentVideo.videoDuration * (seekBar.val() / 100));
     seeking = true;
     targetVideo.currentTime = seekPosition;
-    if(seekUpdateTimer){
-      window.clearInterval(seekUpdateTimer);
-      seekUpdateTimer = null;
-    }
+    toggleSeekTimer(false);
     sendSeek(targetWs, targetVideo, seekPosition);
   }
 
@@ -580,7 +573,35 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     } else {
       return false;
     }
+  }
+
+  var toggleSeekBar = function (showOrHide) {
+    if (showOrHide===true) {
+      // cleanup seekUpdateTimer if exist
+      toggleSeekTimer(true);
     
+    } else {
+      toggleSeekTimer(false);
+    
+    }
+  }
+
+  var toggleSeekTimer = function (startOrStop) {
+    if (startOrStop===true) {
+      // enable timer if not exist
+      if (! seekUpdateTimer) {
+        seekUpdateTimer = setInterval(seekUpdate, 1000);
+      }
+
+    } else {
+      // diseable timer if exist
+      if(seekUpdateTimer) {
+        window.clearInterval(seekUpdateTimer);
+        seekUpdateTimer = null;
+      }
+
+    }
+
   }
 
   var toggleFullscreen = function () {
