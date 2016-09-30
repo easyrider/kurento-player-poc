@@ -81,7 +81,9 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   });
 
   videoContainer.find('.zoomout').click(function() {
-    adjustVideo('zoom',-0.1);
+    if (videoAdjust.zoom > 1) {
+      adjustVideo('zoom',-0.1);
+    }
   });
 
   videoContainer.find('.rotateleft').click(function() {
@@ -116,20 +118,36 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     canvas = document.createElement("canvas");
     var context = canvas.getContext('2d');
 
-    var cropX = 0;  //從左邊裁調多少px
-    var cropY = 0;  //從上面裁調多少px
-    var cropW = currentVideo.videoWidth;  //上面裁切後，取多少寬度
-    var cropH = currentVideo.videoHeight; //上面裁切後，取多少高度
-    var fullW = currentVideo.videoWidth;  //上面裁切都結束後，最後輸出的寬度
-    var fullH = currentVideo.videoHeight; //上面裁切都結束後，最後輸出的高度
+    const videoWidth = currentVideo.videoWidth;
+    const videoHeight = currentVideo.videoHeight;
+    const zoomRatio = videoAdjust.zoom;
+    // why it really working!! why!! why!! why!!
+    const unknowRatio = 1 / zoomRatio;
+
+    const playerAndVideoRatio = currentVideo.videoWidth / currentVideo.clientWidth;
+
+    var totalWidthCrop = videoWidth * ( zoomRatio -1 ) * unknowRatio;
+    var leftCrop = totalWidthCrop / 2 - videoAdjust.left * playerAndVideoRatio;
+    //var rightCrop = totalWidthCrop / 2 + videoAdjust.left * playerAndVideoRatio;
+
+    var totalHeightCrop = videoHeight * ( zoomRatio -1 ) * unknowRatio;
+    var topCrop = totalHeightCrop / 2 - videoAdjust.top * playerAndVideoRatio;
+    //var buttonCrop = totalHeightCrop / 2 + videoAdjust.top * playerAndVideoRatio;
+
+    //guide: http://www.w3schools.com/tags/canvas_drawimage.asp
+    var cropX = leftCrop;    //完整一張圖，從左邊裁調多少px
+    var cropY = topCrop;     //完整一張圖，從上面裁調多少px
+    var cropW = videoWidth - totalWidthCrop;   //上面裁切後，取多少寬度
+    var cropH = videoHeight - totalHeightCrop; //上面裁切後，取多少高度
+    var fullW = videoWidth;  //上面裁切都結束後，最後輸出的寬度
+    var fullH = videoHeight; //上面裁切都結束後，最後輸出的高度
 
     //canvas's size, or after all, it will be crop again
-    canvas.width = fullW;
-    canvas.height = fullH;
+    canvas.width = currentVideo.videoWidth;
+    canvas.height = currentVideo.videoHeight;
 
     console.log('drawImage params=>', cropX,cropY,cropW,cropH,0,0,fullW,fullH);
 
-    //guide: http://www.w3schools.com/tags/canvas_drawimage.asp
     context.drawImage(currentVideo,cropX,cropY,cropW,cropH,0,0,fullW,fullH);
 
     //lets make a screenshot
