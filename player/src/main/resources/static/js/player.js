@@ -1,92 +1,168 @@
 function createVideoPlayer(wsUrl, videoContainerId, fileList){
-    var console = new Console();
-    var isSeekable = false;
+  var console = new Console();
+  var isSeekable = false;
 
-    var I_CAN_START = 0;
-    var I_CAN_STOP = 1;
-    var I_AM_STARTING = 2;
-    var seekUpdateTimer = undefined;
-    var seekUpdate = function() {
-      if(!seeking) getPosition(currentSocket)
+  var seekUpdateTimer = undefined;
+  var seekUpdate = function() {
+    if(!seeking) getPosition(currentSocket)
+  }
+
+  var seeking = false
+  var playing = 0;
+  var started = false;
+  var videoAdjust = {
+    zoom: 1,
+    rotate: 0,
+    left: 0,
+    top: 0
+  };
+
+  var videoContainer = $( "#"+videoContainerId );
+  var webRtcPeer1;
+  var webRtcPeer2;
+
+  var ws1 = new WebSocket(wsUrl);
+  var ws2 = new WebSocket(wsUrl);
+
+  var video1 = videoContainer.find('.video.primary')[0];
+  var video2 = videoContainer.find('.video.slave')[0];
+
+  var playButton = videoContainer.find(".play-pause");
+  var fullScreenButton = videoContainer.find(".full-screen");
+  var seekBar = videoContainer.find(".seek-bar");
+  var volumeBar = videoContainer.find(".volume-bar");
+
+  //default player is video1
+  var currentUsing = 1;
+  var currentProcess = 1;
+  var currentVideo = video1;
+  var currentSocket = ws1;
+  var bufferPrepared = false;
+
+  //store video info
+  currentVideo.isSeekable = undefined;
+  currentVideo.initSeekable = undefined;
+  currentVideo.endSeekable = undefined;
+  currentVideo.videoDuration = undefined;
+
+  var screenshotImage = $("#image");
+
+  // Array of possible browser specific settings for transformation
+  var properties = ['transform', 'WebkitTransform', 'MozTransform',
+                    'msTransform', 'OTransform'];
+  // Find out which CSS transform the browser supports
+  for (var key in properties) {
+    var element = properties[key];
+    if (currentVideo.style[element]==='') {
+      videoAdjust.transform = element;
+      break;
     }
+  }
 
-    var seeking = false
-    var playing = 0;
-
-    var zoomScale = 1;
-    var started = false;
-
-    var videoContainer = $( "#"+videoContainerId );
-    var webRtcPeer;
-
-    var ws1 = new WebSocket(wsUrl);
-    var ws2 = new WebSocket(wsUrl);
-
-    var video1 = videoContainer.find('.video.primary')[0];
-    var video2 = videoContainer.find('.video.slave')[0];
-
-    var playButton = videoContainer.find(".play-pause");
-
-    // mute button not complete 
-    // no Action register on mute button
-    var muteButton = videoContainer.find(".mute");
-
-    var fullScreenButton = videoContainer.find(".full-screen");
-
-    var seekBar = videoContainer.find(".seek-bar");
-    var volumeBar = videoContainer.find(".volume-bar");
-
-    var controlPanel = [playButton, seekBar, muteButton, muteButton, fullScreenButton]
-
-    //default player is video1
-    var currentUsing = 1;
-    var currentVideo = video1;
-    var currentSocket = ws1;
-    var bufferPrepared = false;
-
-    //store video info
-    currentVideo.isSeekable = undefined;
-    currentVideo.initSeekable = undefined;
-    currentVideo.endSeekable = undefined;
-    currentVideo.videoDuration = undefined;
-
-    playButton.click(function() {
-
+  // click event
+  playButton.click(function() {
     var actionName = playButton.text();
     if (actionName == "Play") {
       // Play the video
       if(!started){
         started = true;
-        start(fileList[0], currentVideo, currentSocket)
+        start(fileList[playing], currentVideo, currentSocket);
       } else {
-        resume(currentSocket)
+        resume(currentSocket);
       }
-
-      /*
-      setTimeout(function(){
-        console.log("=== start video2 ===");
-        start(fileList[1], video2, ws2)
-      }, 5000)
-
-      setTimeout(function(){
-        console.log("=== show video2 ===");
-        video1.style.display = 'none';
-        video2.style.display = 'block';
-      }, 10000)
-      */
-
-
-      // Update the button text to 'Pause'
-
     } else {
       // Pause the video
       pause(currentSocket);
-
-      // Update the button text to 'Play'
     }
   });
 
+  videoContainer.find('.zoomin').click(function() {
+    adjustVideo('zoom',0.1);
+  });
 
+  videoContainer.find('.zoomout').click(function() {
+    if (videoAdjust.zoom > 1) {
+      adjustVideo('zoom',-0.1);
+    }
+  });
+
+  videoContainer.find('.rotateleft').click(function() {
+    adjustVideo('rotate',5);
+  });
+
+  videoContainer.find('.rotateright').click(function() {
+    adjustVideo('rotate',-5);
+  });
+
+  videoContainer.find('.left').click(function() {
+    adjustVideo('left',-5);
+  });
+
+  videoContainer.find('.right').click(function() {
+    adjustVideo('left',5);
+  });
+
+  videoContainer.find('.up').click(function() {
+    adjustVideo('top',-5);
+  });
+
+  videoContainer.find('.down').click(function() {
+    adjustVideo('top',5);
+  });
+
+  videoContainer.find('.reset').click(function() {
+    adjustVideo('reset');
+  });
+
+  videoContainer.find(".screenshot-button").click(function() {
+    canvas = document.createElement("canvas");
+    var context = canvas.getContext('2d');
+
+    const videoWidth = currentVideo.videoWidth;
+    const videoHeight = currentVideo.videoHeight;
+    const zoomRatio = videoAdjust.zoom;
+    // why it really working!! why!! why!! why!!
+    const unknowRatio = 1 / zoomRatio;
+
+    var playerAndVideoRatio = currentVideo.videoWidth / currentVideo.clientWidth;
+    // if video is 1080x1920 not 1920x1080, it's a vertical Video
+    // vertical Video will fit by height not width
+    var verticalVideoRatio = currentVideo.videoHeight / currentVideo.clientHeight;
+    if ( verticalVideoRatio > playerAndVideoRatio ) {
+      playerAndVideoRatio = verticalVideoRatio;
+    }
+
+    var totalWidthCrop = videoWidth * ( zoomRatio -1 ) * unknowRatio;
+    var leftCrop = totalWidthCrop / 2 - videoAdjust.left * playerAndVideoRatio * unknowRatio;
+    //var rightCrop = totalWidthCrop / 2 + videoAdjust.left * playerAndVideoRatio * unknowRatio;
+
+    var totalHeightCrop = videoHeight * ( zoomRatio -1 ) * unknowRatio;
+    var topCrop = totalHeightCrop / 2 - videoAdjust.top * playerAndVideoRatio * unknowRatio;
+    //var buttonCrop = totalHeightCrop / 2 + videoAdjust.top * playerAndVideoRatio * unknowRatio;
+
+    //guide: http://www.w3schools.com/tags/canvas_drawimage.asp
+    var cropX = leftCrop;    //完整一張圖，從左邊裁調多少px
+    var cropY = topCrop;     //完整一張圖，從上面裁調多少px
+    var cropW = videoWidth - totalWidthCrop;   //上面裁切後，取多少寬度
+    var cropH = videoHeight - totalHeightCrop; //上面裁切後，取多少高度
+    var fullW = videoWidth;  //上面裁切都結束後，最後輸出的寬度
+    var fullH = videoHeight; //上面裁切都結束後，最後輸出的高度
+
+    //canvas's size, or after all, it will be crop again
+    canvas.width = currentVideo.videoWidth;
+    canvas.height = currentVideo.videoHeight;
+
+    console.log('drawImage params=>', cropX,cropY,cropW,cropH,0,0,fullW,fullH);
+
+    context.drawImage(currentVideo,cropX,cropY,cropW,cropH,0,0,fullW,fullH);
+
+    //lets make a screenshot
+    screenshotImage.attr('src', canvas.toDataURL() );
+    screenshotImage.css('display', "block");
+
+  });
+
+  // change event
   seekBar.change(function() {
     doSeek(currentSocket, currentVideo)
   });
@@ -97,277 +173,148 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   });
 
   fullScreenButton.click(function() {
-    if (currentVideo.requestFullscreen) {
-      currentVideo.requestFullscreen();
-    } else if (currentVideo.mozRequestFullScreen) {
-      currentVideo.mozRequestFullScreen(); // Firefox
-    } else if (currentVideo.webkitRequestFullscreen) {
-      currentVideo.webkitRequestFullscreen(); // Chrome and Safari
-    }
+    toggleFullscreen();
   });
-
-
   // bar end
 
-  var SCREENSHOTS = (function(){
-    console.log("SCREENSHOTS");
-
-    //SCREENSHOTS
-    //for screenshot options and creation
-    var image = $('#image')[0];
-    var size = videoContainer.find(".size")[0];
-    var screenshotsize = videoContainer.find(".screenshotsize")[0];
-
-    //control size of screenshot
-    size.addEventListener('change', function(){
-      var s = this.value;
-      screenshotsize.innerHTML = s;
-    }, false);
-
-    var screenshot = videoContainer.find(".screenshot-button");
-    screenshot.click(function() {
-
-      //grab current video frame and put it into a canvas element, consider screenshotsize
-      canvas = document.createElement("canvas");
-      var context = canvas.getContext('2d');
-
-      var w = currentVideo.videoWidth * size.value;
-      var h = currentVideo.videoHeight * size.value;
-      canvas.width = w;
-      canvas.height = h;
-      var fullW = zoomScale * size.value * currentVideo.videoWidth;
-      var fullH = zoomScale * size.value * currentVideo.videoHeight;
-
-      var zoomW = (zoomScale * currentVideo.videoWidth);
-      var zoomH = (zoomScale * currentVideo.videoHeight);
-
-      var scaleX = zoomScale === 1 ? 0 : (zoomW - currentVideo.videoWidth) / 2;
-      var scaleY = zoomScale === 1 ? 0 : (zoomH - currentVideo.videoHeight) / 2;
-      var scaleW = currentVideo.videoWidth / zoomScale;
-      var scaleH = currentVideo.videoHeight / zoomScale;
-
-      console.log('drawImage params=>', scaleX,scaleY,scaleW,scaleH,0,0,fullW,fullH);
-
-      context.drawImage(currentVideo,scaleX,scaleY,scaleW,scaleH,0,0,fullW,fullH);
-
-      //lets make a screenshot
-      image.src = canvas.toDataURL();
-      image.style.display = "block";
-
-    });
-  })();
-
-  // -----------------------------------------------------------------------
-  // there will create extra controlls elements
-  var vidControls = (function () {
-    /* predefine zoom and rotate */
-    var zoom = 1,
-      rotate = 0;
-
-    /* Grab the necessary DOM elements */
-    var stage = videoContainer[0];
-    var v = currentVideo;
-    var controls = videoContainer.find('.video-controls')[0];
-
-    /* Array of possible browser specific settings for transformation */
-    var properties = ['transform', 'WebkitTransform', 'MozTransform',
-                      'msTransform', 'OTransform'],
-      prop = properties[0];
-
-    /* Iterators and stuff */
-    var i, j, t;
-
-    /* Find out which CSS transform the browser supports */
-    for (i = 0, j = properties.length; i < j; i++) {
-      if (typeof stage.style[properties[i]] !== 'undefined') {
-        prop = properties[i];
+  var adjustVideo = function(mode,amout) {
+    switch (mode) {
+      case 'reset':
+        videoAdjust.left = 0;
+        videoAdjust.top = 0;
+        videoAdjust.zoom = 1;
+        videoAdjust.rotate = 0;
         break;
-      }
-    }
-
-    /* Position video */
-    v.style.left = 0;
-    v.style.top = 0;
-
-    /* If there is a controls element, add the player buttons */
-    /* TODO: why does Opera not display the rotation buttons? */
-    if (controls) {
-      // controls.innerHTML = controls.innerHTML +
-      // TODO: use jQuery's methos to add control element.. 
-      //       or direct add on index.html ?
-      var extraControllers = document.createElement("change");
-      extraControllers.innerHTML =
-        '<button class="zoomin">+</button>' +
-        '<button class="zoomout">-</button>' +
-        '<button class="left">⇠</button>' +
-        '<button class="right">⇢</button>' +
-        '<button class="up">⇡</button>' +
-        '<button class="down">⇣</button>' +
-        '<button class="rotateleft">&#x21bb;</button>' +
-        '<button class="rotateright">&#x21ba;</button>' +
-        '<button class="reset">reset</button>';
-      controls.insertAdjacentElement('beforeend', extraControllers)
-    }
-
-    /* If a button was clicked (uses event delegation)...*/
-    // TODO: use jQuer's controls.click instead
-    controls.addEventListener('click', function (e) {
-      console.log(e);
-      t = e.target;
-      if (t.nodeName.toLowerCase() === 'button') {
-
-        /* Check the class name of the button and act accordingly */
-        switch (t.className) {
-
-          /* Increase zoom and set the transformation */
-        case 'zoomin':
-          zoom = zoom + 0.1;
-          v.style[prop] = 'scale(' + zoom + ') rotate(' + rotate + 'deg)';
-          break;
-
-          /* Decrease zoom and set the transformation */
-        case 'zoomout':
-          zoom = zoom - 0.1;
-          v.style[prop] = 'scale(' + zoom + ') rotate(' + rotate + 'deg)';
-          break;
-
-          /* Increase rotation and set the transformation */
-        case 'rotateleft':
-          rotate = rotate + 5;
-          v.style[prop] = 'rotate(' + rotate + 'deg) scale(' + zoom + ')';
-          break;
-          /* Decrease rotation and set the transformation */
-        case 'rotateright':
-          rotate = rotate - 5;
-          v.style[prop] = 'rotate(' + rotate + 'deg) scale(' + zoom + ')';
-          break;
-
-          /* Move video around by reading its left/top and altering it */
-        case 'left':
-          v.style.left = (parseInt(v.style.left, 10) - 5) + 'px';
-          break;
-        case 'right':
-          v.style.left = (parseInt(v.style.left, 10) + 5) + 'px';
-          break;
-        case 'up':
-          v.style.top = (parseInt(v.style.top, 10) - 5) + 'px';
-          break;
-        case 'down':
-          v.style.top = (parseInt(v.style.top, 10) + 5) + 'px';
-          break;
-
-          /* Reset all to default */
-        case 'reset':
-          zoom = 1;
-          rotate = 0;
-          v.style.top = 0 + 'px';
-          v.style.left = 0 + 'px';
-          v.style[prop] = 'rotate(' + rotate + 'deg) scale(' + zoom + ')';
-          break;
-        }
-        zoomScale = zoom;
-        e.preventDefault();
-      }
-    }, false);
-  })();
-
-
-    // WebSocket action all here
-    var wsOnMsg = function(message) {
-      var parsedMessage = JSON.parse(message.data);
-      console.info('Received message: ' + message.data);
-
-      switch (parsedMessage.id) {
-      case 'startResponse':
-        startResponse(parsedMessage);
-        break;
-      case 'error':
-        onError('Error message from server: ' + parsedMessage.message);
-        break;
-      case 'playEnd':
-        playEnd(currentVideo, currentSocket);
-        break;
-      case 'videoInfo':
-        if (bufferPrepared==false) {
-          currentVideo.isSeekable = parsedMessage.isSeekable;
-          currentVideo.initSeekable = parsedMessage.initSeekable;
-          currentVideo.endSeekable = parsedMessage.endSeekable;
-          currentVideo.videoDuration = parsedMessage.videoDuration;
-        } else {
-          if (currentUsing==1) {
-            video2.isSeekable = parsedMessage.isSeekable;
-            video2.initSeekable = parsedMessage.initSeekable;
-            video2.endSeekable = parsedMessage.endSeekable;
-            video2.videoDuration = parsedMessage.videoDuration;
-            pause(ws2,true);
-          } else {
-            video1.isSeekable = parsedMessage.isSeekable;
-            video1.initSeekable = parsedMessage.initSeekable;
-            video1.endSeekable = parsedMessage.endSeekable;
-            video1.videoDuration = parsedMessage.videoDuration;
-            pause(ws1,true);
-          }
-        }
-        break;
-      case 'iceCandidate':
-        webRtcPeer.addIceCandidate(parsedMessage.candidate, function(error) {
-          if (error)
-            return console.error('Error adding candidate: ' + error);
-        });
-        break;
-      case 'seek':
-        seeking = false;
-        // console.log("=== seek seeking ===", seeking);
-        setTimeout(function(){
-          seekUpdateTimer = setInterval(seekUpdate, 1000);
-        }, "3000")
-
-        // console.log (parsedMessage.message);
-
-        break;
-      case 'position':
-        var videoPosition = parsedMessage.position;
-        var seekBar = videoContainer.find(".seek-bar")[0];
-        var duration = currentVideo.videoDuration;
-        var seekBarValue = videoPosition/duration * 100;
-        // console.log("=== seekBarValue ===", seekBarValue);
-        seekBar.value = seekBarValue
-
-        var left = ( currentVideo.videoDuration - videoPosition ) / 1000;
-        // console.log("=== left:"+left.toString()+" ===" )
-        if (left<10 && bufferPrepared==false) {
-          // even no next video, still have to mark prepared
-          bufferPrepared = true;
-
-          // check next video exist
-          nextPlaying = playing + 1;
-          if(nextPlaying < fileList.length) {
-            console.log('less than 10 second, prepare next video!!');
-            if (currentUsing==1) {
-              console.log('now using video1, prepare next on video2')
-              start(fileList[nextPlaying], video2, ws2);
-            } else {
-              console.log('now using video2, prepare next on video1')
-              start(fileList[nextPlaying], video1, ws1);
-            }
-          }
-        }
-        
-        break;
-      case 'iceCandidate':
+      case undefined:
         break;
       default:
-        //start = false;
-        onError('Unrecognized message', parsedMessage);
-      }
+        // default can be left, top, zoom, rotate
+        videoAdjust[mode] += amout;
+        break;
     }
-    ws1.onmessage = wsOnMsg;
-    ws2.onmessage = wsOnMsg;
 
-  var start = function (sorceUrl, targetVideo, targetWs) {
-    // Disable start button
-    console.log("=== sorceUrl ===", sorceUrl);
-    togglePause();
+    // apply setting
+    currentVideo.style.top = (videoAdjust.top) + 'px';
+    currentVideo.style.left = (videoAdjust.left) + 'px';
+    currentVideo.style[videoAdjust.transform] = 
+      'scale(' + videoAdjust.zoom + ') rotate(' + videoAdjust.rotate + 'deg)';
+  }
+
+  // WebSocket action all here
+  var wsOnMsg = function(message) {
+    var parsedMessage = JSON.parse(message.data);
+    console.info('Received message: ' + message.data);
+
+    switch (parsedMessage.id) {
+    case 'startResponse':
+      startResponse(parsedMessage);
+      break;
+    case 'error':
+      onError('Error message from server: ' + parsedMessage.message);
+      break;
+    case 'playEnd':
+      playEnd(currentVideo, currentSocket);
+      break;
+    case 'videoInfo':
+      if (bufferPrepared==false) {
+        currentVideo.isSeekable = parsedMessage.isSeekable;
+        currentVideo.initSeekable = parsedMessage.initSeekable;
+        currentVideo.endSeekable = parsedMessage.endSeekable;
+        currentVideo.videoDuration = parsedMessage.videoDuration;
+      } else {
+        if (currentUsing==1) {
+          video2.isSeekable = parsedMessage.isSeekable;
+          video2.initSeekable = parsedMessage.initSeekable;
+          video2.endSeekable = parsedMessage.endSeekable;
+          video2.videoDuration = parsedMessage.videoDuration;
+          pause(ws2,true);
+          // TODO: should seek to head, or it will lose 1second video
+          // issue #17
+        } else {
+          video1.isSeekable = parsedMessage.isSeekable;
+          video1.initSeekable = parsedMessage.initSeekable;
+          video1.endSeekable = parsedMessage.endSeekable;
+          video1.videoDuration = parsedMessage.videoDuration;
+          pause(ws1,true);
+          // TODO: should seek to head, or it will lose 1second video
+          // issue #17
+        }
+      }
+      break;
+    case 'iceCandidate':
+      if (currentProcess==1) {
+        webRtcPeer1.addIceCandidate(parsedMessage.candidate, function(error) {
+          if (error) {
+            return console.error('Error adding candidate: ' + error);
+          }
+        });
+      } else {
+        webRtcPeer2.addIceCandidate(parsedMessage.candidate, function(error) {
+          if (error) {
+            return console.error('Error adding candidate: ' + error);
+          }
+        });
+      }
+      break;
+    case 'seek':
+      seeking = false;
+      // console.log("=== seek seeking ===", seeking);
+      setTimeout(function(){
+        seekUpdateTimer = setInterval(seekUpdate, 1000);
+      }, "3000")
+
+      // console.log (parsedMessage.message);
+
+      break;
+    case 'position':
+      var videoPosition = parsedMessage.position;
+      var seekBar = videoContainer.find(".seek-bar")[0];
+      var duration = currentVideo.videoDuration;
+      var seekBarValue = videoPosition/duration * 100;
+      // console.log("=== seekBarValue ===", seekBarValue);
+      seekBar.value = seekBarValue
+
+      var left = ( currentVideo.videoDuration - videoPosition ) / 1000;
+      // console.log("=== left:"+left.toString()+" ===" )
+      if (left<10 && bufferPrepared==false) {
+        // even no next video, still have to mark prepared
+        bufferPrepared = true;
+
+        // check next video exist
+        nextPlaying = playing + 1;
+        if(nextPlaying < fileList.length) {
+          console.log('less than 10 second, prepare next video!!');
+          if (currentUsing==1) {
+            console.log('now using video1, prepare next on video2')
+            currentProcess = 2;
+            start(fileList[nextPlaying], video2, ws2, true);
+          } else {
+            console.log('now using video2, prepare next on video1')
+            currentProcess = 1;
+            start(fileList[nextPlaying], video1, ws1, true);
+          }
+        }
+      }
+      
+      break;
+    case 'iceCandidate':
+      break;
+    default:
+      //start = false;
+      onError('Unrecognized message', parsedMessage);
+    }
+  }
+  // register event when server send message over WebSocket
+  ws1.onmessage = wsOnMsg;
+  ws2.onmessage = wsOnMsg;
+
+  // actually video control functions
+  var start = function (sorceUrl, targetVideo, targetWs, noToggle) {
+    if (noToggle===undefined||noToggle==false) {
+      // Disable start button
+      console.log("=== sorceUrl ===", sorceUrl);
+      togglePause();
+    }
     if (! seekUpdateTimer) {
       seekUpdateTimer = setInterval(seekUpdate, 1000);
     }
@@ -398,18 +345,30 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
 
     console.info('User media constraints' + userMediaConstraints);
 
-    webRtcPeer = new kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options, function(error) {
-      if (error)
-        return console.error(error);
+    if (currentProcess==1) {
+      webRtcPeer1 = new kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options, function(error) {
+        if (error) {
+          return console.error(error);
+        }
 
-      webRtcPeer.generateOffer(function(error, offerSdp){
-        onOffer(error, offerSdp, sorceUrl, targetWs)
+        webRtcPeer1.generateOffer(function(error, offerSdp){
+          onOffer(error, offerSdp, sorceUrl, targetWs)
+        });
       });
-    });
+    } else {
+      webRtcPeer2 = new kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options, function(error) {
+        if (error) {
+          return console.error(error);
+        }
+
+        webRtcPeer2.generateOffer(function(error, offerSdp){
+          onOffer(error, offerSdp, sorceUrl, targetWs)
+        });
+      });
+    }
   }
 
   var onOffer = function (error, offerSdp, sorceUrl, targetWs) {
-
     if (error)
       return console.error('Error generating the offer');
 
@@ -439,7 +398,13 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   var startResponse = function (message) {
     console.log('SDP answer received from server. Processing ...');
 
-    webRtcPeer.processAnswer(message.sdpAnswer, function(error) {
+    var tarWebRtcPeer = undefined;
+    if ( currentProcess==1 ) {
+      tarWebRtcPeer = webRtcPeer1;
+    } else {
+      tarWebRtcPeer = webRtcPeer2;
+    }
+    tarWebRtcPeer.processAnswer(message.sdpAnswer, function(error) {
       if (error)
         return console.error(error);
     });
@@ -449,7 +414,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     if (wsOnly===undefined||wsOnly===false) {
       togglePause();
       console.log('Stopping video ...');
-  
       if(seekUpdateTimer){
         window.clearInterval(seekUpdateTimer);
         seekUpdateTimer = null;
@@ -474,12 +438,20 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     sendMessage(message, targetWs);
   }
 
-  var stop = function (targetWs, targetVideo) {
+  var stop = function (targetWs, targetVideo, keepSeekUpdate) {
     console.log('Stopping video ...');
-    if(seekUpdateTimer){
+    if(keepSeekUpdate===undefined||keepSeekUpdate==false) {
       window.clearInterval(seekUpdateTimer);
       seekUpdateTimer = null;
     }
+
+    var webRtcPeer = undefined;
+    if (currentUsing==1) {
+      webRtcPeer = webRtcPeer1;
+    } else {
+      webRtcPeer = webRtcPeer2;
+    }
+    console.log(webRtcPeer)
     if (webRtcPeer) {
       webRtcPeer.dispose();
       webRtcPeer = null;
@@ -497,9 +469,17 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
 
     //start(fileList[playing], targetVideo, targetWs);
     if(playing < fileList.length){
-      console.log('switching video ')
-      //switch video player here
+      console.log('switching video');
+      // check video fullscreen or not
+      var fullscreen = fetchFullscreen();
+      if (fullscreen) {
+        console.log('already fullscreen!!');
+        toggleFullscreen();
+      }
+      
+      // switch
       currentVideo.style.display = "none";
+      stop(currentSocket,currentVideo,true);
       if (currentUsing==1) {
         currentUsing = 2;
         currentVideo = video2;
@@ -510,19 +490,28 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
         currentSocket = ws1;
       }
       resume(currentSocket,true)
+      adjustVideo();
       currentVideo.style.display = "";
+      if (fullscreen) {
+        console.log('resume fullscreen');
+        toggleFullscreen();
+      }
     } else {
       hideSpinner(targetVideo);
       stop(ws1, video1);
       stop(ws2, video2);
       started = false;
+      playing = 0;
       togglePause();
     }
     bufferPrepared = false;
-
   }
 
   var doSeek = function (targetWs, targetVideo) {
+    // prevent user set seekbar before video load
+    if (currentVideo.videoDuration===undefined) {
+      return 0;
+    }
     var seekPosition = parseInt(currentVideo.videoDuration * (seekBar.val() / 100));
     seeking = true;
     targetVideo.currentTime = seekPosition;
@@ -530,7 +519,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       window.clearInterval(seekUpdateTimer);
       seekUpdateTimer = null;
     }
-
 
     var message = {
       id : 'doSeek',
@@ -546,10 +534,10 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     sendMessage(message, targetWs);
   }
 
+  // low level function
   var sendMessage = function (message, targetWs) {
     var jsonMessage = JSON.stringify(message);
     console.log('Senging message: ' + jsonMessage);
-    // if(!targetWs) targetWs = ws
     targetWs.send(jsonMessage);
   }
 
@@ -557,24 +545,44 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     var pauseText = playButton.text();
     if (pauseText == "Play") {
       playButton.text("Pause");
-      //$("#pause-icon").attr('class', 'glyphicon glyphicon-pause');
-      //$("#pause").attr('onclick', "pause()");
     } else {
       playButton.text("Play");
-      //$("#pause-icon").attr('class', 'glyphicon glyphicon-play');
-      //$("#pause").attr('onclick', "resume()");
     }
   }
 
-  var disableButton = function (id) {
-    $(id).attr('disabled', true);
-    $(id).removeAttr('onclick');
+  var fetchFullscreen = function () {
+    if ( document.fullscreenElement ||
+      document.webkitFullscreenElement ||
+      document.mozFullScreenElement ||
+      document.msFullscreenElement ) {
+        return true;
+    } else {
+      return false;
+    }
+    
   }
 
-  var enableButton = function (id, functionName) {
-    $(id).attr('disabled', false);
-    if (functionName) {
-      $(id).attr('onclick', functionName);
+  var toggleFullscreen = function () {
+    if ( fetchFullscreen() ) {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+        }
+    } else {
+      if (currentVideo.requestFullscreen) {
+        currentVideo.requestFullscreen();
+      } else if (currentVideo.mozRequestFullScreen) {
+        currentVideo.mozRequestFullScreen(); // Firefox
+      } else if (currentVideo.webkitRequestFullscreen) {
+        currentVideo.webkitRequestFullscreen(); // Chrome and Safari
+      } else if (currentVideo.msRequestFullscreen) {
+        currentVideo.msRequestFullscreen(); // IE11
+      }
     }
   }
 

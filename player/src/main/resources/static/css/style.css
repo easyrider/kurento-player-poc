@@ -1,23 +1,10 @@
 .video-container {
-	width: 640px;
-	height: 480px;
-	position: relative;
-}
-
-.video-container {
   background: #eee;
   width: 400px;
   height: 300px;
   overflow: hidden;
   position: relative;
   margin: 2em 0;
-}
-
-.video-container span {
-  font-size: 20px;
-  color: #666;
-  display: block;
-  padding: 2em;
 }
 
 video{
@@ -29,7 +16,7 @@ video{
 }
 
 .video-controls {
-	/*position: absolute;*/
+	position: absolute;
 	bottom: 0;
 	left: 0;
 	right: 0;
@@ -73,8 +60,18 @@ button:hover {
 	cursor: pointer;
 }
 
+button.close {
+  padding-right: 4px;
+  padding-left: 4px;
+  border: 0px;
+  margin: 0px;
+}
+
+button.text:hover {
+	cursor: default;
+}
 .seek-bar {
-	width: 360px;
+	width: 200px;
 }
 
 .volume-bar {
@@ -82,5 +79,6 @@ button:hover {
 }
 
 #image {
-  max-width: 600px
+  max-width: 400px;
+  max-height: 300px;
 }
