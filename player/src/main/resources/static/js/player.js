@@ -1,14 +1,13 @@
 function createVideoPlayer(wsUrl, videoContainerId, fileList){
     var console = new Console();
-    var state = null;
     var isSeekable = false;
 
     var I_CAN_START = 0;
     var I_CAN_STOP = 1;
     var I_AM_STARTING = 2;
-    var seekUpdateTimer = {};
+    var seekUpdateTimer = undefined;
     var seekUpdate = function() {
-      if(!seeking) getPosition(ws1)
+      if(!seeking) getPosition(currentSocket)
     }
 
     var seeking = false
@@ -40,8 +39,11 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     var controlPanel = [playButton, seekBar, muteButton, muteButton, fullScreenButton]
 
     //default player is video1
+    var currentUsing = 1;
     var currentVideo = video1;
-    
+    var currentSocket = ws1;
+    var bufferPrepared = false;
+
     //store video info
     currentVideo.isSeekable = undefined;
     currentVideo.initSeekable = undefined;
@@ -55,28 +57,30 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       // Play the video
       if(!started){
         started = true;
-        start(fileList[0], video1, ws1)
+        start(fileList[0], currentVideo, currentSocket)
       } else {
-        resume(ws1)
+        resume(currentSocket)
       }
 
-      // setTimeout(function(){
-      //   console.log("=== start video2 ===");
-      //   start(fileList[1], video2, ws2)
-      // }, 5000)
-      //
-      // setTimeout(function(){
-      //   console.log("=== show video2 ===");
-      //   video1.style.display = 'none';
-      //   video2.style.display = 'block';
-      // }, 10000)
-      // start(fileList[playing], video2, ws2)
+      /*
+      setTimeout(function(){
+        console.log("=== start video2 ===");
+        start(fileList[1], video2, ws2)
+      }, 5000)
+
+      setTimeout(function(){
+        console.log("=== show video2 ===");
+        video1.style.display = 'none';
+        video2.style.display = 'block';
+      }, 10000)
+      */
+
 
       // Update the button text to 'Pause'
 
     } else {
       // Pause the video
-      pause(ws1);
+      pause(currentSocket);
 
       // Update the button text to 'Play'
     }
@@ -84,7 +88,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
 
 
   seekBar.change(function() {
-    doSeek(ws1, video1)
+    doSeek(currentSocket, currentVideo)
   });
 
   volumeBar.change(function() {
@@ -120,27 +124,27 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       screenshotsize.innerHTML = s;
     }, false);
 
-    var screenshot = videoContainer.find("#screenshot-button");
+    var screenshot = videoContainer.find(".screenshot-button");
     screenshot.click(function() {
 
       //grab current video frame and put it into a canvas element, consider screenshotsize
       canvas = document.createElement("canvas");
       var context = canvas.getContext('2d');
 
-      var w = currentVideo.clientWidth * size.value;
-      var h = currentVideo.clientHeight * size.value;
+      var w = currentVideo.videoWidth * size.value;
+      var h = currentVideo.videoHeight * size.value;
       canvas.width = w;
       canvas.height = h;
-      var fullW = zoomScale * size.value * currentVideo.clientWidth;
-      var fullH = zoomScale * size.value * currentVideo.clientHeight;
+      var fullW = zoomScale * size.value * currentVideo.videoWidth;
+      var fullH = zoomScale * size.value * currentVideo.videoHeight;
 
-      var zoomW = (zoomScale * currentVideo.clientWidth);
-      var zoomH = (zoomScale * currentVideo.clientHeight);
+      var zoomW = (zoomScale * currentVideo.videoWidth);
+      var zoomH = (zoomScale * currentVideo.videoHeight);
 
-      var scaleX = zoomScale === 1 ? 0 : (zoomW - currentVideo.clientWidth) / 2;
-      var scaleY = zoomScale === 1 ? 0 : (zoomH - currentVideo.clientHeight) / 2;
-      var scaleW = currentVideo.clientWidth / zoomScale;
-      var scaleH = currentVideo.clientHeight / zoomScale;
+      var scaleX = zoomScale === 1 ? 0 : (zoomW - currentVideo.videoWidth) / 2;
+      var scaleY = zoomScale === 1 ? 0 : (zoomH - currentVideo.videoHeight) / 2;
+      var scaleW = currentVideo.videoWidth / zoomScale;
+      var scaleH = currentVideo.videoHeight / zoomScale;
 
       console.log('drawImage params=>', scaleX,scaleY,scaleW,scaleH,0,0,fullW,fullH);
 
@@ -268,6 +272,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   })();
 
 
+    // WebSocket action all here
     var wsOnMsg = function(message) {
       var parsedMessage = JSON.parse(message.data);
       console.info('Received message: ' + message.data);
@@ -280,13 +285,29 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
         onError('Error message from server: ' + parsedMessage.message);
         break;
       case 'playEnd':
-        playEnd(video1, ws1);
+        playEnd(currentVideo, currentSocket);
         break;
       case 'videoInfo':
-        currentVideo.isSeekable = parsedMessage.isSeekable;
-        currentVideo.initSeekable = parsedMessage.initSeekable;
-        currentVideo.endSeekable = parsedMessage.endSeekable;
-        currentVideo.videoDuration = parsedMessage.videoDuration;
+        if (bufferPrepared==false) {
+          currentVideo.isSeekable = parsedMessage.isSeekable;
+          currentVideo.initSeekable = parsedMessage.initSeekable;
+          currentVideo.endSeekable = parsedMessage.endSeekable;
+          currentVideo.videoDuration = parsedMessage.videoDuration;
+        } else {
+          if (currentUsing==1) {
+            video2.isSeekable = parsedMessage.isSeekable;
+            video2.initSeekable = parsedMessage.initSeekable;
+            video2.endSeekable = parsedMessage.endSeekable;
+            video2.videoDuration = parsedMessage.videoDuration;
+            pause(ws2,true);
+          } else {
+            video1.isSeekable = parsedMessage.isSeekable;
+            video1.initSeekable = parsedMessage.initSeekable;
+            video1.endSeekable = parsedMessage.endSeekable;
+            video1.videoDuration = parsedMessage.videoDuration;
+            pause(ws1,true);
+          }
+        }
         break;
       case 'iceCandidate':
         webRtcPeer.addIceCandidate(parsedMessage.candidate, function(error) {
@@ -296,44 +317,60 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
         break;
       case 'seek':
         seeking = false;
-        console.log("=== seek seeking ===", seeking);
+        // console.log("=== seek seeking ===", seeking);
         setTimeout(function(){
           seekUpdateTimer = setInterval(seekUpdate, 1000);
         }, "3000")
 
-        console.log (parsedMessage.message);
+        // console.log (parsedMessage.message);
 
         break;
       case 'position':
-        //not in need write to container's element
-        //document.getElementById("videoPosition").value = parsedMessage.position;
-        //var videoPosition = document.getElementById("videoPosition").value
         var videoPosition = parsedMessage.position;
-        //var seekBar = document.getElementById("seek-bar");
         var seekBar = videoContainer.find(".seek-bar")[0];
         var duration = currentVideo.videoDuration;
         var seekBarValue = videoPosition/duration * 100;
-        console.log("=== seekBarValue ===", seekBarValue);
+        // console.log("=== seekBarValue ===", seekBarValue);
         seekBar.value = seekBarValue
 
+        var left = ( currentVideo.videoDuration - videoPosition ) / 1000;
+        // console.log("=== left:"+left.toString()+" ===" )
+        if (left<10 && bufferPrepared==false) {
+          // even no next video, still have to mark prepared
+          bufferPrepared = true;
+
+          // check next video exist
+          nextPlaying = playing + 1;
+          if(nextPlaying < fileList.length) {
+            console.log('less than 10 second, prepare next video!!');
+            if (currentUsing==1) {
+              console.log('now using video1, prepare next on video2')
+              start(fileList[nextPlaying], video2, ws2);
+            } else {
+              console.log('now using video2, prepare next on video1')
+              start(fileList[nextPlaying], video1, ws1);
+            }
+          }
+        }
+        
         break;
       case 'iceCandidate':
         break;
       default:
-        if (state == I_AM_STARTING) {
-          setState(I_CAN_START);
-        }
+        //start = false;
         onError('Unrecognized message', parsedMessage);
       }
     }
-    ws1.onmessage = wsOnMsg
+    ws1.onmessage = wsOnMsg;
+    ws2.onmessage = wsOnMsg;
 
   var start = function (sorceUrl, targetVideo, targetWs) {
     // Disable start button
     console.log("=== sorceUrl ===", sorceUrl);
-    playButton.text("Pause");
-    seekUpdateTimer = setInterval(seekUpdate, 1000);
-    setState(I_AM_STARTING);
+    togglePause();
+    if (! seekUpdateTimer) {
+      seekUpdateTimer = setInterval(seekUpdate, 1000);
+    }
     showSpinner(targetVideo);
 
     var mode = $('input[name="mode"]:checked').val();
@@ -400,7 +437,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   }
 
   var startResponse = function (message) {
-    setState(I_CAN_STOP);
     console.log('SDP answer received from server. Processing ...');
 
     webRtcPeer.processAnswer(message.sdpAnswer, function(error) {
@@ -409,14 +445,15 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     });
   }
 
-  var pause = function (targetWs) {
-    togglePause()
-    console.log('Stopping video ...');
-    playButton.text("Play");
-
-    if(seekUpdateTimer){
-      window.clearInterval(seekUpdateTimer);
-      seekUpdateTimer = null;
+  var pause = function (targetWs,wsOnly) {
+    if (wsOnly===undefined||wsOnly===false) {
+      togglePause();
+      console.log('Stopping video ...');
+  
+      if(seekUpdateTimer){
+        window.clearInterval(seekUpdateTimer);
+        seekUpdateTimer = null;
+      }
     }
     console.log('Pausing video ...');
     var message = {
@@ -425,10 +462,11 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     sendMessage(message, targetWs);
   }
 
-  var resume = function (targetWs) {
-    playButton.text("Pause");
-    seekUpdateTimer = setInterval(seekUpdate, 1000);
-    togglePause()
+  var resume = function (targetWs,wsOnly) {
+    if (wsOnly===undefined||wsOnly===false) {
+      togglePause();
+      seekUpdateTimer = setInterval(seekUpdate, 1000);
+    }
     console.log('Resuming video ...');
     var message = {
       id : 'resume'
@@ -442,7 +480,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       window.clearInterval(seekUpdateTimer);
       seekUpdateTimer = null;
     }
-    setState(I_CAN_START);
     if (webRtcPeer) {
       webRtcPeer.dispose();
       webRtcPeer = null;
@@ -456,14 +493,33 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   }
 
   var playEnd = function (targetVideo, targetWs) {
-    setState(I_CAN_START);
-    hideSpinner(targetVideo);
-    stop(targetWs, targetVideo)
     playing += 1;
 
+    //start(fileList[playing], targetVideo, targetWs);
     if(playing < fileList.length){
-      start(fileList[playing], targetVideo, targetWs);
+      console.log('switching video ')
+      //switch video player here
+      currentVideo.style.display = "none";
+      if (currentUsing==1) {
+        currentUsing = 2;
+        currentVideo = video2;
+        currentSocket = ws2;
+      } else {
+        currentUsing = 1;
+        currentVideo = video1;
+        currentSocket = ws1;
+      }
+      resume(currentSocket,true)
+      currentVideo.style.display = "";
+    } else {
+      hideSpinner(targetVideo);
+      stop(ws1, video1);
+      stop(ws2, video2);
+      started = false;
+      togglePause();
     }
+    bufferPrepared = false;
+
   }
 
   var doSeek = function (targetWs, targetVideo) {
@@ -490,43 +546,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     sendMessage(message, targetWs);
   }
 
-  var setState = function (nextState) {
-    switch (nextState) {
-    case I_CAN_START:
-      enableButton('#start', 'start()');
-      disableButton('#pause');
-      disableButton('#stop');
-      enableButton('#videourl');
-      enableButton("[name='mode']");
-      disableButton('#getPosition');
-      disableButton('#doSeek');
-      break;
-
-    case I_CAN_STOP:
-      disableButton('#start');
-      enableButton('#pause', 'pause()');
-      enableButton('#stop', 'stop()');
-      disableButton('#videourl');
-      disableButton("[name='mode']");
-      break;
-
-    case I_AM_STARTING:
-      disableButton('#start');
-      disableButton('#pause');
-      disableButton('#stop');
-      disableButton('#videourl');
-      disableButton('#getPosition');
-      disableButton('#doSeek');
-      disableButton("[name='mode']");
-      break;
-
-    default:
-      onError('Unknown state ' + nextState);
-      return;
-    }
-    state = nextState;
-  }
-
   var sendMessage = function (message, targetWs) {
     var jsonMessage = JSON.stringify(message);
     console.log('Senging message: ' + jsonMessage);
@@ -535,15 +554,15 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   }
 
   var togglePause = function () {
-    var pauseText = $("#pause-text").text();
-    if (pauseText == " Resume ") {
-      $("#pause-text").text(" Pause ");
-      $("#pause-icon").attr('class', 'glyphicon glyphicon-pause');
-      $("#pause").attr('onclick', "pause()");
+    var pauseText = playButton.text();
+    if (pauseText == "Play") {
+      playButton.text("Pause");
+      //$("#pause-icon").attr('class', 'glyphicon glyphicon-pause');
+      //$("#pause").attr('onclick', "pause()");
     } else {
-      $("#pause-text").text(" Resume ");
-      $("#pause-icon").attr('class', 'glyphicon glyphicon-play');
-      $("#pause").attr('onclick', "resume()");
+      playButton.text("Play");
+      //$("#pause-icon").attr('class', 'glyphicon glyphicon-play');
+      //$("#pause").attr('onclick', "resume()");
     }
   }
 
