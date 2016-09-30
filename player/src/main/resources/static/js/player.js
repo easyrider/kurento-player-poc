@@ -55,6 +55,8 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   currentVideo.endSeekable = undefined;
   currentVideo.videoDuration = undefined;
 
+  var screenshotImage = $("#image");
+
   // Array of possible browser specific settings for transformation
   var properties = ['transform', 'WebkitTransform', 'MozTransform',
                     'msTransform', 'OTransform'];
@@ -66,23 +68,15 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       break;
     }
   }
-  /*
-  for (var i = 0, properties.length; i < properties.length; i++) {
-    if (typeof stage.style[properties[i]] !== 'undefined') {
-      prop = properties[i];
-      break;
-    }
-  }
-  */
 
-
+  // click event
   playButton.click(function() {
     var actionName = playButton.text();
     if (actionName == "Play") {
       // Play the video
       if(!started){
         started = true;
-        start(fileList[0], currentVideo, currentSocket);
+        start(fileList[playing], currentVideo, currentSocket);
       } else {
         resume(currentSocket);
       }
@@ -92,6 +86,69 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     }
   });
 
+  videoContainer.find('.zoomin').click(function() {
+    adjustVideo('zoom',0.1);
+  });
+
+  videoContainer.find('.zoomout').click(function() {
+    adjustVideo('zoom',-0.1);
+  });
+
+  videoContainer.find('.rotateleft').click(function() {
+    adjustVideo('rotate',5);
+  });
+
+  videoContainer.find('.rotateright').click(function() {
+    adjustVideo('rotate',-5);
+  });
+
+  videoContainer.find('.left').click(function() {
+    adjustVideo('left',-5);
+  });
+
+  videoContainer.find('.right').click(function() {
+    adjustVideo('left',5);
+  });
+
+  videoContainer.find('.up').click(function() {
+    adjustVideo('top',-5);
+  });
+
+  videoContainer.find('.down').click(function() {
+    adjustVideo('top',5);
+  });
+
+  videoContainer.find('.reset').click(function() {
+    adjustVideo('reset');
+  });
+
+  videoContainer.find(".screenshot-button").click(function() {
+    canvas = document.createElement("canvas");
+    var context = canvas.getContext('2d');
+
+    var cropX = 0;  //從左邊裁調多少px
+    var cropY = 0;  //從上面裁調多少px
+    var cropW = currentVideo.videoWidth;  //上面裁切後，取多少寬度
+    var cropH = currentVideo.videoHeight; //上面裁切後，取多少高度
+    var fullW = currentVideo.videoWidth;  //上面裁切都結束後，最後輸出的寬度
+    var fullH = currentVideo.videoHeight; //上面裁切都結束後，最後輸出的高度
+
+    //canvas's size, or after all, it will be crop again
+    canvas.width = fullW;
+    canvas.height = fullH;
+
+    console.log('drawImage params=>', cropX,cropY,cropW,cropH,0,0,fullW,fullH);
+
+    //guide: http://www.w3schools.com/tags/canvas_drawimage.asp
+    context.drawImage(currentVideo,cropX,cropY,cropW,cropH,0,0,fullW,fullH);
+
+    //lets make a screenshot
+    screenshotImage.attr('src', canvas.toDataURL() );
+    screenshotImage.css('display', "block");
+
+  });
+
+  // change event
   seekBar.change(function() {
     doSeek(currentSocket, currentVideo)
   });
@@ -106,140 +163,28 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   });
   // bar end
 
-  var SCREENSHOTS = (function(){
-    console.log("SCREENSHOTS");
-
-    //SCREENSHOTS
-    //for screenshot options and creation
-    var image = $('#image')[0];
-
-    var screenshot = videoContainer.find(".screenshot-button");
-    screenshot.click(function() {
-
-      //grab current video frame and put it into a canvas element, consider screenshotsize
-      canvas = document.createElement("canvas");
-      var context = canvas.getContext('2d');
-
-      var cropX = 0;  //從左邊裁調多少px
-      var cropY = 0;  //從上面裁調多少px
-      var cropW = currentVideo.videoWidth;  //上面裁切後，取多少寬度
-      var cropH = currentVideo.videoHeight; //上面裁切後，取多少高度
-      var fullW = currentVideo.videoWidth;  //上面裁切都結束後，最後輸出的寬度
-      var fullH = currentVideo.videoHeight; //上面裁切都結束後，最後輸出的高度
-
-      //canvas's size, or after all, it will be crop again
-      canvas.width = fullW;
-      canvas.height = fullH;
-
-      console.log('drawImage params=>', cropX,cropY,cropW,cropH,0,0,fullW,fullH);
-
-      //guide: http://www.w3schools.com/tags/canvas_drawimage.asp
-      context.drawImage(currentVideo,cropX,cropY,cropW,cropH,0,0,fullW,fullH);
-
-      //lets make a screenshot
-      image.src = canvas.toDataURL();
-      image.style.display = "block";
-
-    });
-  })();
-
-  // -----------------------------------------------------------------------
-  // there will create extra controlls elements
-  var vidControls = (function () {
-
-    /* Grab the necessary DOM elements */
-    var stage = videoContainer[0];
-    var v = currentVideo;
-    var controls = videoContainer.find('.video-controls')[0];
-
-    /* If there is a controls element, add the player buttons */
-    /* TODO: why does Opera not display the rotation buttons? */
-    if (controls) {
-      // controls.innerHTML = controls.innerHTML +
-      // TODO: use jQuery's methos to add control element.. 
-      //       or direct add on index.html ?
-      var extraControllers = document.createElement("change");
-      extraControllers.innerHTML =
-        '<button class="zoomin">+</button>' +
-        '<button class="zoomout">-</button>' +
-        '<button class="left">⇠</button>' +
-        '<button class="right">⇢</button>' +
-        '<button class="up">⇡</button>' +
-        '<button class="down">⇣</button>' +
-        '<button class="rotateleft">&#x21bb;</button>' +
-        '<button class="rotateright">&#x21ba;</button>' +
-        '<button class="reset">reset</button>';
-      controls.insertAdjacentElement('beforeend', extraControllers)
+  var adjustVideo = function(mode,amout) {
+    switch (mode) {
+      case 'reset':
+        videoAdjust.left = 0;
+        videoAdjust.top = 0;
+        videoAdjust.zoom = 1;
+        videoAdjust.rotate = 0;
+        break;
+      case undefined:
+        break;
+      default:
+        // default can be left, top, zoom, rotate
+        videoAdjust[mode] += amout;
+        break;
     }
 
-    /* If a button was clicked (uses event delegation)...*/
-    // TODO: use jQuer's controls.click instead
-    controls.addEventListener('click', function (e) {
-      t = e.target;
-      console.log("this class Name clicked: "+t.className);
-      if (t.nodeName.toLowerCase() === 'button') {
-
-        /* Check the class name of the button and act accordingly */
-        switch (t.className) {
-
-          /* Increase zoom and set the transformation */
-        case 'zoomin':
-          videoAdjust.zoom += 0.1;
-          v.style[videoAdjust.transform] = 
-              'scale(' + videoAdjust.zoom + ') rotate(' + videoAdjust.rotate + 'deg)';
-          break;
-
-          /* Decrease zoom and set the transformation */
-        case 'zoomout':
-          videoAdjust.zoom -= 0.1;
-          v.style[videoAdjust.transform] = 
-              'scale(' + videoAdjust.zoom + ') rotate(' + videoAdjust.rotate + 'deg)';
-          break;
-
-          /* Increase rotation and set the transformation */
-        case 'rotateleft':
-          videoAdjust.rotate += 5;
-          v.style[videoAdjust.transform] = 
-              'scale(' + videoAdjust.zoom + ') rotate(' + videoAdjust.rotate + 'deg)';
-          break;
-          /* Decrease rotation and set the transformation */
-        case 'rotateright':
-          videoAdjust.rotate -= 5;
-          v.style[videoAdjust.transform] = 
-              'scale(' + videoAdjust.zoom + ') rotate(' + videoAdjust.rotate + 'deg)';
-          break;
-
-        /* Move video around by reading its left/top and altering it */
-        case 'left':
-          videoAdjust.left -= 5;
-          v.style.left = (videoAdjust.left) + 'px';
-          break;
-        case 'right':
-          videoAdjust.left += 5;
-          v.style.left = (videoAdjust.left) + 'px';
-          break;
-        case 'up':
-          videoAdjust.top -= 5;
-          v.style.top = (videoAdjust.top) + 'px';
-          break;
-        case 'down':
-          videoAdjust.top -= 5;
-          v.style.top = (videoAdjust.top) + 'px';
-          break;
-
-          /* Reset all to default */
-        case 'reset':
-          zoom = 1;
-          rotate = 0;
-          v.style.top = 0 + 'px';
-          v.style.left = 0 + 'px';
-          v.style[prop] = 'rotate(' + rotate + 'deg) scale(' + zoom + ')';
-          break;
-        }
-        e.preventDefault();
-      }
-    }, false);
-  })();
+    // apply setting
+    currentVideo.style.top = (videoAdjust.top) + 'px';
+    currentVideo.style.left = (videoAdjust.left) + 'px';
+    currentVideo.style[videoAdjust.transform] = 
+      'scale(' + videoAdjust.zoom + ') rotate(' + videoAdjust.rotate + 'deg)';
+  }
 
   // WebSocket action all here
   var wsOnMsg = function(message) {

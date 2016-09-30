@@ -60,6 +60,13 @@ button:hover {
 	cursor: pointer;
 }
 
+button.close {
+  padding-right: 4px;
+  padding-left: 4px;
+  border: 0px;
+  margin: 0px;
+}
+
 .seek-bar {
 	width: 200px;
 }
