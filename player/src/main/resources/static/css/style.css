@@ -67,6 +67,9 @@ button.close {
   margin: 0px;
 }
 
+button.text:hover {
+	cursor: default;
+}
 .seek-bar {
 	width: 200px;
 }
