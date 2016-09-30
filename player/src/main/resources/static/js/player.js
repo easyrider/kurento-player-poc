@@ -10,8 +10,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   var seeking = false
   var playing = 0;
   var started = false;
-  // TODO:
-  // moving zoomin, zoomout, rotateleft, left, right, up, down to use these
   var videoAdjust = {
     zoom: 1,
     rotate: 0,
@@ -476,6 +474,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
         currentSocket = ws1;
       }
       resume(currentSocket,true)
+      adjustVideo();
       currentVideo.style.display = "";
       if (fullscreen) {
         console.log('resume fullscreen');
