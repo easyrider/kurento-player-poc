@@ -124,7 +124,13 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     // why it really working!! why!! why!! why!!
     const unknowRatio = 1 / zoomRatio;
 
-    const playerAndVideoRatio = currentVideo.videoWidth / currentVideo.clientWidth;
+    var playerAndVideoRatio = currentVideo.videoWidth / currentVideo.clientWidth;
+    // if video is 1080x1920 not 1920x1080, it's a vertical Video
+    // vertical Video will fit by height not width
+    var verticalVideoRatio = currentVideo.videoHeight / currentVideo.clientHeight;
+    if ( verticalVideoRatio > playerAndVideoRatio ) {
+      playerAndVideoRatio = verticalVideoRatio;
+    }
 
     var totalWidthCrop = videoWidth * ( zoomRatio -1 ) * unknowRatio;
     var leftCrop = totalWidthCrop / 2 - videoAdjust.left * playerAndVideoRatio * unknowRatio;
