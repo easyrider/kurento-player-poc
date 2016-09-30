@@ -3,7 +3,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
 
   var seekUpdateTimer = undefined;
   var seekUpdate = function() {
-    if (!currentVideo.isLive && !seeking) { 
+    if (currentVideo.isNotLive && !seeking) { 
       getPosition(currentSocket);
     } else {
       console.log('live video, don\' need getPosition');
@@ -48,6 +48,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   //currentVideo.endSeekable = undefined;
   currentVideo.videoDuration = undefined;
   currentVideo.isNotLive = undefined;
+  currentVideo.started = undefined;
 
   var screenshotImage = $("#image");
 
@@ -241,7 +242,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       //targetVideo.initSeekable = parsedMessage.initSeekable;
       //targetVideo.endSeekable = parsedMessage.endSeekable;
       targetVideo.videoDuration = parsedMessage.videoDuration;
-      targetVideo.isNotLive = ( parsedMessage.isSeekable || parsedMessage.videoDuration==0 );
+      targetVideo.isNotLive = ( parsedMessage.isSeekable && parsedMessage.videoDuration>0 );
       if (targetVideo.isNotLive) {
         console.log('seekbar should show')
       } else {
@@ -374,6 +375,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
         });
       });
     }
+    targetVideo.started = true;
   }
 
   var onOffer = function (error, offerSdp, sorceUrl, targetWs) {
@@ -497,9 +499,17 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
         currentVideo = video1;
         currentSocket = ws1;
       }
-      resume(currentSocket,true)
-      adjustVideo();
+      // hide old video
       currentVideo.style.display = "";
+
+      if (currentVideo.started) {
+        // video already preload
+        resume(currentSocket,true);
+      } else {
+        // video not preload
+        start(fileList[playing], currentVideo, currentSocket);
+      }
+      adjustVideo();
       if (fullscreen) {
         console.log('resume fullscreen');
         toggleFullscreen();
