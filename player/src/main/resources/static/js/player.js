@@ -9,8 +9,15 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
 
   var seeking = false
   var playing = 0;
-
   var started = false;
+  // TODO:
+  // moving zoomin, zoomout, rotateleft, left, right, up, down to use these
+  var videoAdjust = {
+    zoom: 1,
+    rotate: 0,
+    left: 0,
+    top: 0
+  };
 
   var videoContainer = $( "#"+videoContainerId );
   var webRtcPeer1;
@@ -47,6 +54,27 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   currentVideo.initSeekable = undefined;
   currentVideo.endSeekable = undefined;
   currentVideo.videoDuration = undefined;
+
+  // Array of possible browser specific settings for transformation
+  var properties = ['transform', 'WebkitTransform', 'MozTransform',
+                    'msTransform', 'OTransform'];
+  // Find out which CSS transform the browser supports
+  for (var key in properties) {
+    var element = properties[key];
+    if (currentVideo.style[element]==='') {
+      videoAdjust.transform = element;
+      break;
+    }
+  }
+  /*
+  for (var i = 0, properties.length; i < properties.length; i++) {
+    if (typeof stage.style[properties[i]] !== 'undefined') {
+      prop = properties[i];
+      break;
+    }
+  }
+  */
+
 
   playButton.click(function() {
     var actionName = playButton.text();
@@ -118,30 +146,11 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   // -----------------------------------------------------------------------
   // there will create extra controlls elements
   var vidControls = (function () {
-    /* predefine zoom and rotate */
-    var zoom = 1,
-      rotate = 0;
 
     /* Grab the necessary DOM elements */
     var stage = videoContainer[0];
     var v = currentVideo;
     var controls = videoContainer.find('.video-controls')[0];
-
-    /* Array of possible browser specific settings for transformation */
-    var properties = ['transform', 'WebkitTransform', 'MozTransform',
-                      'msTransform', 'OTransform'],
-      prop = properties[0];
-
-    /* Iterators and stuff */
-    var i, j, t;
-
-    /* Find out which CSS transform the browser supports */
-    for (i = 0, j = properties.length; i < j; i++) {
-      if (typeof stage.style[properties[i]] !== 'undefined') {
-        prop = properties[i];
-        break;
-      }
-    }
 
     /* If there is a controls element, add the player buttons */
     /* TODO: why does Opera not display the rotation buttons? */
@@ -166,8 +175,8 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     /* If a button was clicked (uses event delegation)...*/
     // TODO: use jQuer's controls.click instead
     controls.addEventListener('click', function (e) {
-      console.log(e);
       t = e.target;
+      console.log("this class Name clicked: "+t.className);
       if (t.nodeName.toLowerCase() === 'button') {
 
         /* Check the class name of the button and act accordingly */
@@ -175,39 +184,47 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
 
           /* Increase zoom and set the transformation */
         case 'zoomin':
-          zoom = zoom + 0.1;
-          v.style[prop] = 'scale(' + zoom + ') rotate(' + rotate + 'deg)';
+          videoAdjust.zoom += 0.1;
+          v.style[videoAdjust.transform] = 
+              'scale(' + videoAdjust.zoom + ') rotate(' + videoAdjust.rotate + 'deg)';
           break;
 
           /* Decrease zoom and set the transformation */
         case 'zoomout':
-          zoom = zoom - 0.1;
-          v.style[prop] = 'scale(' + zoom + ') rotate(' + rotate + 'deg)';
+          videoAdjust.zoom -= 0.1;
+          v.style[videoAdjust.transform] = 
+              'scale(' + videoAdjust.zoom + ') rotate(' + videoAdjust.rotate + 'deg)';
           break;
 
           /* Increase rotation and set the transformation */
         case 'rotateleft':
-          rotate = rotate + 5;
-          v.style[prop] = 'rotate(' + rotate + 'deg) scale(' + zoom + ')';
+          videoAdjust.rotate += 5;
+          v.style[videoAdjust.transform] = 
+              'scale(' + videoAdjust.zoom + ') rotate(' + videoAdjust.rotate + 'deg)';
           break;
           /* Decrease rotation and set the transformation */
         case 'rotateright':
-          rotate = rotate - 5;
-          v.style[prop] = 'rotate(' + rotate + 'deg) scale(' + zoom + ')';
+          videoAdjust.rotate -= 5;
+          v.style[videoAdjust.transform] = 
+              'scale(' + videoAdjust.zoom + ') rotate(' + videoAdjust.rotate + 'deg)';
           break;
 
-          /* Move video around by reading its left/top and altering it */
+        /* Move video around by reading its left/top and altering it */
         case 'left':
-          v.style.left = (parseInt(v.style.left, 10) - 5) + 'px';
+          videoAdjust.left -= 5;
+          v.style.left = (videoAdjust.left) + 'px';
           break;
         case 'right':
-          v.style.left = (parseInt(v.style.left, 10) + 5) + 'px';
+          videoAdjust.left += 5;
+          v.style.left = (videoAdjust.left) + 'px';
           break;
         case 'up':
-          v.style.top = (parseInt(v.style.top, 10) - 5) + 'px';
+          videoAdjust.top -= 5;
+          v.style.top = (videoAdjust.top) + 'px';
           break;
         case 'down':
-          v.style.top = (parseInt(v.style.top, 10) + 5) + 'px';
+          videoAdjust.top -= 5;
+          v.style.top = (videoAdjust.top) + 'px';
           break;
 
           /* Reset all to default */
