@@ -28,17 +28,9 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   var video2 = videoContainer.find('.video.slave')[0];
 
   var playButton = videoContainer.find(".play-pause");
-
-  // mute button not complete 
-  // no Action register on mute button
-  var muteButton = videoContainer.find(".mute");
-
   var fullScreenButton = videoContainer.find(".full-screen");
-
   var seekBar = videoContainer.find(".seek-bar");
   var volumeBar = videoContainer.find(".volume-bar");
-
-  var controlPanel = [playButton, seekBar, muteButton, muteButton, fullScreenButton]
 
   //default player is video1
   var currentUsing = 1;
