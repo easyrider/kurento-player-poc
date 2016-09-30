@@ -248,8 +248,10 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       targetVideo.isNotLive = ( parsedMessage.isSeekable && parsedMessage.videoDuration>0 );
       if (targetVideo.isNotLive) {
         console.log('seekbar should show')
+        toggleSeekBar(true);
       } else {
         console.log('seekbar should hide')
+        toggleSeekBar(false);
       }
       break;
     case 'iceCandidate':
@@ -325,7 +327,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       console.log("=== sorceUrl ===", sorceUrl);
       togglePause();
     }
-    toggleSeekBar(true);
     showSpinner(targetVideo);
 
     var mode = $('input[name="mode"]:checked').val();
@@ -579,10 +580,14 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     if (showOrHide===true) {
       // cleanup seekUpdateTimer if exist
       toggleSeekTimer(true);
+      videoContainer.find('.seek-bar').css('display', 'inline');
+      console.log(videoContainer.find('.live'));
+      videoContainer.find('.live').css('display', 'none');
     
     } else {
       toggleSeekTimer(false);
-    
+      videoContainer.find('.seek-bar').css('display', 'none');
+      videoContainer.find('.live').css('display', 'inline');
     }
   }
 

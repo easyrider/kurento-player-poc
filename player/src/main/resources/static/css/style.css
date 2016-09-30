@@ -74,6 +74,17 @@ button.text:hover {
 button.play {
   width: 48px;
 }
+
+button.live {
+  background: red;
+	width: 200px;
+  display: none;
+}
+
+div.hr {
+  clear: both;
+}
+
 .seek-bar {
 	width: 200px;
 }
@@ -86,3 +97,4 @@ button.play {
   max-width: 400px;
   max-height: 300px;
 }
+
