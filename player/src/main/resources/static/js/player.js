@@ -127,12 +127,12 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     const playerAndVideoRatio = currentVideo.videoWidth / currentVideo.clientWidth;
 
     var totalWidthCrop = videoWidth * ( zoomRatio -1 ) * unknowRatio;
-    var leftCrop = totalWidthCrop / 2 - videoAdjust.left * playerAndVideoRatio;
-    //var rightCrop = totalWidthCrop / 2 + videoAdjust.left * playerAndVideoRatio;
+    var leftCrop = totalWidthCrop / 2 - videoAdjust.left * playerAndVideoRatio * unknowRatio;
+    //var rightCrop = totalWidthCrop / 2 + videoAdjust.left * playerAndVideoRatio * unknowRatio;
 
     var totalHeightCrop = videoHeight * ( zoomRatio -1 ) * unknowRatio;
-    var topCrop = totalHeightCrop / 2 - videoAdjust.top * playerAndVideoRatio;
-    //var buttonCrop = totalHeightCrop / 2 + videoAdjust.top * playerAndVideoRatio;
+    var topCrop = totalHeightCrop / 2 - videoAdjust.top * playerAndVideoRatio * unknowRatio;
+    //var buttonCrop = totalHeightCrop / 2 + videoAdjust.top * playerAndVideoRatio * unknowRatio;
 
     //guide: http://www.w3schools.com/tags/canvas_drawimage.asp
     var cropX = leftCrop;    //完整一張圖，從左邊裁調多少px
