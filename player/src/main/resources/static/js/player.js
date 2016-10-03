@@ -1,13 +1,16 @@
 function createVideoPlayer(wsUrl, videoContainerId, fileList){
   var console = new Console();
-  var isSeekable = false;
 
   var seekUpdateTimer = undefined;
   var seekUpdate = function() {
-    if(!seeking) getPosition(currentSocket)
+    if (currentVideo.isNotLive && !seeking) { 
+      getPosition(currentSocket);
+    } else {
+      console.log('live video, don\' need getPosition');
+    }
   }
 
-  var seeking = false
+  var seeking = false;
   var playing = 0;
   var started = false;
   var videoAdjust = {
@@ -40,10 +43,12 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   var bufferPrepared = false;
 
   //store video info
-  currentVideo.isSeekable = undefined;
-  currentVideo.initSeekable = undefined;
-  currentVideo.endSeekable = undefined;
+  //currentVideo.isSeekable = undefined;
+  //currentVideo.initSeekable = undefined;
+  //currentVideo.endSeekable = undefined;
   currentVideo.videoDuration = undefined;
+  currentVideo.isNotLive = undefined;
+  currentVideo.started = undefined;
 
   var screenshotImage = $("#image");
 
@@ -216,29 +221,37 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       playEnd(currentVideo, currentSocket);
       break;
     case 'videoInfo':
+      // just load video
       if (bufferPrepared==false) {
-        currentVideo.isSeekable = parsedMessage.isSeekable;
-        currentVideo.initSeekable = parsedMessage.initSeekable;
-        currentVideo.endSeekable = parsedMessage.endSeekable;
-        currentVideo.videoDuration = parsedMessage.videoDuration;
+        var targetVideo = currentVideo;
+        var targetWs = currentSocket;
+      // preload video for gpaless play
       } else {
-        if (currentUsing==1) {
-          video2.isSeekable = parsedMessage.isSeekable;
-          video2.initSeekable = parsedMessage.initSeekable;
-          video2.endSeekable = parsedMessage.endSeekable;
-          video2.videoDuration = parsedMessage.videoDuration;
-          pause(ws2,true);
-          // TODO: should seek to head, or it will lose 1second video
-          // issue #17
+        if ( currentUsing==1 ) {
+          var targetVideo = video2;
+          var targetWs = ws2;
         } else {
-          video1.isSeekable = parsedMessage.isSeekable;
-          video1.initSeekable = parsedMessage.initSeekable;
-          video1.endSeekable = parsedMessage.endSeekable;
-          video1.videoDuration = parsedMessage.videoDuration;
-          pause(ws1,true);
-          // TODO: should seek to head, or it will lose 1second video
-          // issue #17
+          var targetVideo = video1;
+          var targetWs = ws1;
         }
+        targetVideo.isNotLive = ( parsedMessage.isSeekable && parsedMessage.videoDuration>0 );
+        if (targetVideo.isNotLive) {
+          pause(targetWs,true);
+          sendSeek(targetWs,targetVideo,0);
+        }
+      }
+      // live RTMP, isSeekable still true 
+      //targetVideo.isSeekable = parsedMessage.isSeekable;
+      //targetVideo.initSeekable = parsedMessage.initSeekable;
+      //targetVideo.endSeekable = parsedMessage.endSeekable;
+      targetVideo.videoDuration = parsedMessage.videoDuration;
+      targetVideo.isNotLive = ( parsedMessage.isSeekable && parsedMessage.videoDuration>0 );
+      if (targetVideo.isNotLive) {
+        console.log('seekbar should show')
+        toggleSeekBar(true);
+      } else {
+        console.log('seekbar should hide')
+        toggleSeekBar(false);
       }
       break;
     case 'iceCandidate':
@@ -258,13 +271,12 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       break;
     case 'seek':
       seeking = false;
-      // console.log("=== seek seeking ===", seeking);
-      setTimeout(function(){
-        seekUpdateTimer = setInterval(seekUpdate, 1000);
-      }, "3000")
-
-      // console.log (parsedMessage.message);
-
+      if (parsedMessage.message == 'success' ) {
+        // console.log("=== seek seeking ===", seeking);
+        toggleSeekTimer(true);
+      } else {
+        console.log('seek failed')
+      }
       break;
     case 'position':
       var videoPosition = parsedMessage.position;
@@ -315,9 +327,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       console.log("=== sorceUrl ===", sorceUrl);
       togglePause();
     }
-    if (! seekUpdateTimer) {
-      seekUpdateTimer = setInterval(seekUpdate, 1000);
-    }
     showSpinner(targetVideo);
 
     var mode = $('input[name="mode"]:checked').val();
@@ -366,6 +375,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
         });
       });
     }
+    targetVideo.started = true;
   }
 
   var onOffer = function (error, offerSdp, sorceUrl, targetWs) {
@@ -414,10 +424,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     if (wsOnly===undefined||wsOnly===false) {
       togglePause();
       console.log('Stopping video ...');
-      if(seekUpdateTimer){
-        window.clearInterval(seekUpdateTimer);
-        seekUpdateTimer = null;
-      }
+      toggleSeekTimer(false);
     }
     console.log('Pausing video ...');
     var message = {
@@ -429,7 +436,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   var resume = function (targetWs,wsOnly) {
     if (wsOnly===undefined||wsOnly===false) {
       togglePause();
-      seekUpdateTimer = setInterval(seekUpdate, 1000);
+      toggleSeekTimer(true);
     }
     console.log('Resuming video ...');
     var message = {
@@ -441,8 +448,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   var stop = function (targetWs, targetVideo, keepSeekUpdate) {
     console.log('Stopping video ...');
     if(keepSeekUpdate===undefined||keepSeekUpdate==false) {
-      window.clearInterval(seekUpdateTimer);
-      seekUpdateTimer = null;
+      toggleSeekTimer(false);
     }
 
     var webRtcPeer = undefined;
@@ -489,13 +495,22 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
         currentVideo = video1;
         currentSocket = ws1;
       }
-      resume(currentSocket,true)
-      adjustVideo();
       currentVideo.style.display = "";
+
+      // another video may start or not
+      if (currentVideo.started) {
+        resume(currentSocket,true);
+      } else {
+        start(fileList[playing], currentVideo, currentSocket);
+      }
+
+      // restore adjust
+      adjustVideo();
       if (fullscreen) {
         console.log('resume fullscreen');
         toggleFullscreen();
       }
+    // playlist end
     } else {
       hideSpinner(targetVideo);
       stop(ws1, video1);
@@ -509,17 +524,17 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
 
   var doSeek = function (targetWs, targetVideo) {
     // prevent user set seekbar before video load
-    if (currentVideo.videoDuration===undefined) {
+    if (currentVideo.videoDuration===undefined || !currentVideo.isNotLive) {
       return 0;
     }
     var seekPosition = parseInt(currentVideo.videoDuration * (seekBar.val() / 100));
     seeking = true;
     targetVideo.currentTime = seekPosition;
-    if(seekUpdateTimer){
-      window.clearInterval(seekUpdateTimer);
-      seekUpdateTimer = null;
-    }
+    toggleSeekTimer(false);
+    sendSeek(targetWs, targetVideo, seekPosition);
+  }
 
+  var sendSeek = function (targetWs, targetVideo, seekPosition) {
     var message = {
       id : 'doSeek',
       position: seekPosition
@@ -559,7 +574,39 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     } else {
       return false;
     }
+  }
+
+  var toggleSeekBar = function (showOrHide) {
+    if (showOrHide===true) {
+      // cleanup seekUpdateTimer if exist
+      toggleSeekTimer(true);
+      videoContainer.find('.seek-bar').css('display', 'inline');
+      console.log(videoContainer.find('.live'));
+      videoContainer.find('.live').css('display', 'none');
     
+    } else {
+      toggleSeekTimer(false);
+      videoContainer.find('.seek-bar').css('display', 'none');
+      videoContainer.find('.live').css('display', 'inline');
+    }
+  }
+
+  var toggleSeekTimer = function (startOrStop) {
+    if (startOrStop===true) {
+      // enable timer if not exist
+      if (! seekUpdateTimer) {
+        seekUpdateTimer = setInterval(seekUpdate, 1000);
+      }
+
+    } else {
+      // diseable timer if exist
+      if(seekUpdateTimer) {
+        window.clearInterval(seekUpdateTimer);
+        seekUpdateTimer = null;
+      }
+
+    }
+
   }
 
   var toggleFullscreen = function () {
