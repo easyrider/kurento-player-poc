@@ -1,6 +1,4 @@
 function createVideoPlayer(wsUrl, videoContainerId, fileList){
-  var console = new Console();
-
   var seekUpdateTimer = undefined;
   var seekUpdate = function() {
     if (currentVideo.isNotLive && !seeking) { 
@@ -581,7 +579,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       // cleanup seekUpdateTimer if exist
       toggleSeekTimer(true);
       videoContainer.find('.seek-bar').css('display', 'inline');
-      console.log(videoContainer.find('.live'));
       videoContainer.find('.live').css('display', 'none');
     
     } else {
