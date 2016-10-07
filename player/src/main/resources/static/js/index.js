@@ -1,18 +1,28 @@
+var getUrlParameter = function getUrlParameter(sParam) {
+    var sPageURL = decodeURIComponent(window.location.search.substring(1)),
+        sURLVariables = sPageURL.split('&'),
+        sParameterName,
+        i;
+
+    for (i = 0; i < sURLVariables.length; i++) {
+        sParameterName = sURLVariables[i].split('=');
+
+        if (sParameterName[0] === sParam) {
+            return sParameterName[1] === undefined ? true : sParameterName[1];
+        }
+    }
+};
+
 window.onload = function() {
-	var wsUrl = 'wss://' + location.host + '/player';
+	var wsUrl = 'ws://' + location.host + '/player';
 	var videoContainerId = "video-container-1";
+  var source = getUrlParameter('URL');
+  console.log(source)
 	var fileList = [
-		'http://jenkins.trunk.studio/videotest/video1.mkv',
-		'http://jenkins.trunk.studio/videotest/video2.mkv',
-		'http://jenkins.trunk.studio/videotest/video3.mkv'
+    URL
 	]
 	createVideoPlayer(wsUrl, videoContainerId, fileList);
 
-  videoContainerId = 'video-2';
-  fileList = [
-		'http://59.127.83.225/index/ScreenRecord_2016-08-06-03-45-23.mp4'
-  ]
-  createVideoPlayer(wsUrl, videoContainerId, fileList);
 }
 
 window.onbeforeunload = function() {
