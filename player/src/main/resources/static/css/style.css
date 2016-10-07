@@ -80,22 +80,31 @@ button.play {
   width: 48px;
 }
 
+button.Volume {
+  width: 60px;
+}
+
+.volume-bar {
+	width: 60px;
+}
+
+.seek-bar, button.live {
+  /* 100% = full size
+   * 48px = button.play's width
+   * 10px = video-controls's margin, right 5px + left 5px + unknow 2px
+   * 8px  = videoBar and volume-bar's margin
+   * 120px = volume text + volume-bar 
+   * */
+	width: calc(100% - 48px - 12px - 8px - 120px );
+}
+
 button.live {
   background: red;
-	width: 200px;
   display: none;
 }
 
 div.hr {
   clear: both;
-}
-
-.seek-bar {
-	width: 200px;
-}
-
-.volume-bar {
-	width: 60px;
 }
 
 #image {
