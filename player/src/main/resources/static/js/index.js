@@ -17,9 +17,8 @@ window.onload = function() {
 	var wsUrl = 'ws://' + location.host + '/player';
 	var videoContainerId = "video-container-1";
   var source = getUrlParameter('URL');
-  console.log(source)
 	var fileList = [
-    URL
+    source
 	]
 	createVideoPlayer(wsUrl, videoContainerId, fileList);
 
