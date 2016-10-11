@@ -409,8 +409,9 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       targetVideo.started = true;
     }
 
+    var multiFileInfoLoaded = (!multiFile);
     // preload all file info for totalLength
-    if (fileList.length>1) {
+    if (fileList.length>1&&multiFileInfoLoaded) {
       console.log('===multiFiles===');
       console.log('===enable toggles===');
       multiFile = true;
@@ -431,7 +432,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
           });
           console.log(multiFileInfoTotalTime);
 
-          //startVideo();
+          startVideo();
         }
       }, 1000);
 
