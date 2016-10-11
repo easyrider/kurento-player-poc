@@ -8,3 +8,5 @@ kurento-player-poc/Player是一款基於Kurento框架的WebRTC影片播放程式
 
 ## 使用方式
 iframe版本寬度高度均改為100%，Server起來後直接 `iframe` 伺服器網址 `http://localhost:8123/` 後面透過 `URL` 參數帶入網址，像是這樣： `<iframe src=http://localhost:8123/?URL=rtsp://localhost/stream"></iframe>` ，即可引入播放器。
+
+如果需要引入多個來源，可以使用JavaScript陣列作為來源，像是`["http://example.com/movie-01.mp4","http://example.com/movie-02.mp4"]`

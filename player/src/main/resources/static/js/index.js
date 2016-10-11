@@ -17,9 +17,13 @@ window.onload = function() {
 	var wsUrl = 'ws://' + location.host + '/player';
 	var videoContainerId = "video-container-1";
   var source = getUrlParameter('URL');
-	var fileList = [
-    source
-	]
+  var fileList;
+  if (source[0]=='[') {
+    fileList = JSON.parse(source);
+  } else {
+    fileList = [source];
+  }
+
 	createVideoPlayer(wsUrl, videoContainerId, fileList);
 
 }
