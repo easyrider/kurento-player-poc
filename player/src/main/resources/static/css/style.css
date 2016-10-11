@@ -95,6 +95,7 @@ button.Volume {
    * 8px  = videoBar and volume-bar's margin
    * 120px = volume text + volume-bar 
    * */
+  min-width: 60px;
 	width: calc(100% - 48px - 12px - 8px - 120px );
 }
 
