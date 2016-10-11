@@ -21,11 +21,9 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   var videoContainer = $( "#"+videoContainerId );
   var webRtcPeer1;
   var webRtcPeer2;
-  var webRtcPeerLoading;
 
   var ws1 = new WebSocket(wsUrl);
   var ws2 = new WebSocket(wsUrl);
-  var wsLoading = new WebSocket(wsUrl);
 
   var video1 = videoContainer.find('.video.primary')[0];
   var video2 = videoContainer.find('.video.slave')[0];
@@ -301,9 +299,24 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       }
       break;
     case 'position':
-      var videoPosition = parsedMessage.position;
+      var videoPosition = 0;
       var seekBar = videoContainer.find(".seek-bar")[0];
-      var duration = currentVideo.videoDuration;
+
+      var duration;
+      if (!multiFile) {
+        videoPosition = parsedMessage.position;
+        duration = currentVideo.videoDuration;
+      } else { 
+        for (var index=0; index < playing; index++) {
+          console.log('seekbar value should add previewious video ');
+          videoPosition += multiFileInfo[index];
+        }
+        videoPosition += parsedMessage.position;
+        duration = multiFileInfoTotalTime;
+
+        console.log(duration);
+        console.log(videoPosition);
+      }
       var seekBarValue = videoPosition/duration * 100;
       // console.log("=== seekBarValue ===", seekBarValue);
       seekBar.value = seekBarValue
