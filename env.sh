@@ -11,14 +11,15 @@ tmux new -d -s WebServer 'mvn compile exec:java -Dkms.url=ws://localhost:8888/ku
 
 ./easyDeveloper.sh
 
+URL='http://localhost:8123/'
 
 if [ `uname` == "Linux" ]; then
   echo 'opening browser'
-  xdg-open 'https://localhost:8443/'
+  xdg-open "$URL"
 elif [ `uanme` == "Darwin" ]; then
   echo 'opening browser'
-  open 'https://localhost:8443/'
+  open "$URL"
 else
-  echo 'unknow Operating System, please maunally open https://localhost:8443/ '
+  echo 'unknow Operating System, please maunally open '"$URL"
 fi
 
