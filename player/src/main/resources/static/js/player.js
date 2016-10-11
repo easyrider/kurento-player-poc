@@ -21,9 +21,11 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   var videoContainer = $( "#"+videoContainerId );
   var webRtcPeer1;
   var webRtcPeer2;
+  var webRtcPeerLoading;
 
   var ws1 = new WebSocket(wsUrl);
   var ws2 = new WebSocket(wsUrl);
+  var wsLoading = new WebSocket(wsUrl);
 
   var video1 = videoContainer.find('.video.primary')[0];
   var video2 = videoContainer.find('.video.slave')[0];
@@ -39,6 +41,11 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   var currentVideo = video1;
   var currentSocket = ws1;
   var bufferPrepared = false;
+  var multiFile = false;
+  var multiFileInfo = [];
+  var multiFileInfoTotalTime;
+  var multiFileLoading = false;
+  var multiFileLoadingimer = undefined;
 
   //store video info
   //currentVideo.isSeekable = undefined;
@@ -220,9 +227,29 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       break;
     case 'videoInfo':
       // just load video
-      if (bufferPrepared==false) {
+      // preload mutiFiles
+      if (multiFileLoading) {
+        console.log('=======================multiFileLoading=========================');
+        multiFileInfo.push(JSON.parse(message.data).videoDuration);
+        console.log(multiFileInfo);
+
+        // cleanup current webrtc
+        webRtcPeer1.dispose();
+        webRtcPeer = null;
+
+        if (fileList.length == multiFileInfo.length) {
+          console.log('all video Duration loaded')
+          multiFileLoading = false;
+          break;
+        } else {
+          console.log('some video Duration not loaded')
+          preLoadInfo(multiFileInfo.length);
+          break;
+        }
+      } else if (bufferPrepared==false) {
         var targetVideo = currentVideo;
         var targetWs = currentSocket;
+      // preload mutiFiles
       // preload video for gpaless play
       } else {
         if ( currentUsing==1 ) {
@@ -238,10 +265,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
           sendSeek(targetWs,targetVideo,0);
         }
       }
-      // live RTMP, isSeekable still true 
-      //targetVideo.isSeekable = parsedMessage.isSeekable;
-      //targetVideo.initSeekable = parsedMessage.initSeekable;
-      //targetVideo.endSeekable = parsedMessage.endSeekable;
+
       targetVideo.videoDuration = parsedMessage.videoDuration;
       targetVideo.isNotLive = ( parsedMessage.isSeekable && parsedMessage.videoDuration>0 );
       if (targetVideo.isNotLive) {
@@ -318,6 +342,24 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   ws1.onmessage = wsOnMsg;
   ws2.onmessage = wsOnMsg;
 
+
+  var preLoadInfo = function(fileListNumber) {
+      var options = {
+        onicecandidate : function(candidate){
+          onIceCandidate(candidate, ws1)
+        }
+      }
+      webRtcPeer1 = new kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options, function(error) {
+        if (error) {
+          return console.error(error);
+        }
+
+        webRtcPeer1.generateOffer(function(error, offerSdp){
+          onOffer(error, offerSdp, fileList[fileListNumber], ws1)
+        });
+      });
+  }  
+
   // actually video control functions
   var start = function (sorceUrl, targetVideo, targetWs, noToggle) {
     if (noToggle===undefined||noToggle==false) {
@@ -326,54 +368,76 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       togglePause();
     }
     showSpinner(targetVideo);
-
-    var mode = $('input[name="mode"]:checked').val();
-    console.log('Creating WebRtcPeer in ' + mode + ' mode and generating local sdp offer ...');
-
-    // Video and audio by default
-    var userMediaConstraints = {
-      audio : true,
-      video : true
-    }
-
-    if (mode == 'video-only') {
-      userMediaConstraints.audio = false;
-    } else if (mode == 'audio-only') {
-      userMediaConstraints.video = false;
-    }
-
-    var options = {
-      remoteVideo : targetVideo,
-      mediaConstraints : userMediaConstraints,
-      onicecandidate : function(candidate){
-        onIceCandidate(candidate, targetWs)
+    var startVideo = function() {
+      // Video and audio by default
+      var userMediaConstraints = {
+        audio : true,
+        video : true
       }
+  
+      var options = {
+        remoteVideo : targetVideo,
+        mediaConstraints : userMediaConstraints,
+        onicecandidate : function(candidate){
+          onIceCandidate(candidate, targetWs)
+        }
+      }
+  
+      console.info('User media constraints' + userMediaConstraints);
+  
+      if (currentProcess==1) {
+        webRtcPeer1 = new kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options, function(error) {
+          if (error) {
+            return console.error(error);
+          }
+  
+          webRtcPeer1.generateOffer(function(error, offerSdp){
+            onOffer(error, offerSdp, sorceUrl, targetWs)
+          });
+        });
+      } else {
+        webRtcPeer2 = new kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options, function(error) {
+          if (error) {
+            return console.error(error);
+          }
+  
+          webRtcPeer2.generateOffer(function(error, offerSdp){
+            onOffer(error, offerSdp, sorceUrl, targetWs)
+          });
+        });
+      }
+      targetVideo.started = true;
     }
 
-    console.info('User media constraints' + userMediaConstraints);
+    // preload all file info for totalLength
+    if (fileList.length>1) {
+      console.log('===multiFiles===');
+      console.log('===enable toggles===');
+      multiFile = true;
+      multiFileLoading = true;
+      preLoadInfo(0);
 
-    if (currentProcess==1) {
-      webRtcPeer1 = new kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options, function(error) {
-        if (error) {
-          return console.error(error);
+      multiFileLoadingTimer = setInterval(function(checkLoaded) {
+        console.log('interval entered');
+        if (multiFileLoading) {
+          console.log('still loading all video info');
+        } else {
+          console.log('all video info loaded');
+          clearInterval(multiFileLoadingTimer);
+
+          multiFileInfoTotalTime = 0;
+          multiFileInfo.forEach(function(entry) {
+            multiFileInfoTotalTime += entry;
+          });
+          console.log(multiFileInfoTotalTime);
+
+          //startVideo();
         }
+      }, 1000);
 
-        webRtcPeer1.generateOffer(function(error, offerSdp){
-          onOffer(error, offerSdp, sorceUrl, targetWs)
-        });
-      });
     } else {
-      webRtcPeer2 = new kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options, function(error) {
-        if (error) {
-          return console.error(error);
-        }
-
-        webRtcPeer2.generateOffer(function(error, offerSdp){
-          onOffer(error, offerSdp, sorceUrl, targetWs)
-        });
-      });
+      startVideo();
     }
-    targetVideo.started = true;
   }
 
   var onOffer = function (error, offerSdp, sorceUrl, targetWs) {
