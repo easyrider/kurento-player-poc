@@ -32,6 +32,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   var fullScreenButton = videoContainer.find(".full-screen");
   var seekBar = videoContainer.find(".seek-bar");
   var volumeBar = videoContainer.find(".volume-bar");
+  var timing = videoContainer.find(".timing");
 
   //default player is video1
   var currentUsing = 1;
@@ -319,9 +320,23 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
         videoPosition += parsedMessage.position;
         duration = multiFileInfoTotalTime;
 
-        console.log(duration);
-        console.log(videoPosition);
+        //console.log(duration);
+        //console.log(videoPosition);
       }
+      var durationSecond = parseInt(duration / 1000);
+      var positionSecond = parseInt(videoPosition / 1000);
+
+      var durationMinute = parseInt(durationSecond/60);
+      var positionMinute = parseInt(positionSecond/60);
+
+      durationSecond = ( durationSecond % 60 );
+      positionSecond = ( positionSecond % 60 );
+
+      var timingText = durationMinute.toString() + ":" + durationSecond + " / " +
+          positionMinute.toString() + ":" + positionSecond.toString();
+
+      timing.text(timingText);
+
       var seekBarValue = videoPosition/duration * 100;
       // console.log("=== seekBarValue ===", seekBarValue);
       seekBar.value = seekBarValue

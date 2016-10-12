@@ -94,9 +94,14 @@ button.Volume {
    * 10px = video-controls's margin, right 5px + left 5px + unknow 2px
    * 8px  = videoBar and volume-bar's margin
    * 120px = volume text + volume-bar 
+   * 80px = timing width
    * */
   min-width: 60px;
-	width: calc(100% - 48px - 12px - 8px - 120px );
+	width: calc(100% - 48px - 12px - 8px - 120px - 94px );
+}
+
+.timing {
+  width: 90px;
 }
 
 button.live {
