@@ -44,6 +44,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   var multiFileInfoTotalTime;
   var multiFileLoading = false;
   var multiFileLoadingimer = undefined;
+  var multiFileSeeking = undefined;
 
   //store video info
   //currentVideo.isSeekable = undefined;
@@ -267,11 +268,15 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
       targetVideo.videoDuration = parsedMessage.videoDuration;
       targetVideo.isNotLive = ( parsedMessage.isSeekable && parsedMessage.videoDuration>0 );
       if (targetVideo.isNotLive) {
-        console.log('seekbar should show')
+        console.log('seekbar should show');
         toggleSeekBar(true);
       } else {
-        console.log('seekbar should hide')
+        console.log('seekbar should hide');
         toggleSeekBar(false);
+      }
+
+      if (multiFileSeeking) {
+        doSeek(currentSocket, currentVideo);
       }
       break;
     case 'iceCandidate':
@@ -601,13 +606,48 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
   var doSeek = function (targetWs, targetVideo) {
     // prevent user set seekbar before video load
     if (currentVideo.videoDuration===undefined || !currentVideo.isNotLive) {
+      console.log('should not doSeek');
       return 0;
     }
-    var seekPosition = parseInt(currentVideo.videoDuration * (seekBar.val() / 100));
+    var totalVideoDuration;
+    if (multiFile) {
+      totalVideoDuration = multiFileInfoTotalTime;
+    } else {
+      totalVideoDuration = currentVideo.videoDuration;
+    }
+
+    var seekPosition = parseInt(totalVideoDuration * (seekBar.val() / 100));
     seeking = true;
-    targetVideo.currentTime = seekPosition;
     toggleSeekTimer(false);
-    sendSeek(targetWs, targetVideo, seekPosition);
+
+    if (multiFile) {
+      for (var index in properties) { 
+        fileDuration = multiFileInfo[index];
+        if (seekPosition < fileDuration) {
+          console.log('in file '+index.toString());
+          break;
+        } else {
+          seekPosition -= fileDuration;
+        }
+      }
+
+      if (index==playing) {
+        console.log('just seek');
+        sendSeek(targetWs, targetVideo, seekPosition);
+        multiFileSeeking = false;
+      } else {
+        console.log('need switch file');
+        stop(currentSocket,currentVideo,false);
+        playing = index;
+        start(fileList[playing], currentVideo, currentSocket);
+        multiFileSeeking = true;
+        togglePause(true);
+        
+        //throw('not finish');
+      }
+    } else {
+      sendSeek(targetWs, targetVideo, seekPosition);
+    }
   }
 
   var sendSeek = function (targetWs, targetVideo, seekPosition) {
@@ -632,9 +672,9 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList){
     targetWs.send(jsonMessage);
   }
 
-  var togglePause = function () {
+  var togglePause = function (forceToPause) {
     var pauseText = playButton.text();
-    if (pauseText == "Play") {
+    if (pauseText == "Play" || forceToPause ) {
       playButton.text("Pause");
     } else {
       playButton.text("Play");
