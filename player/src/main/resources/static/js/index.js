@@ -18,14 +18,16 @@ window.onload = function() {
 	var videoContainerId = "video-container-1";
   var source = getUrlParameter('URL');
   var fileList;
-  if (source[0]=='[') {
+  if (source && source[0]=='[') {
     fileList = JSON.parse(source);
   } else {
     fileList = [source];
   }
 
-	createVideoPlayer(wsUrl, videoContainerId, fileList);
+  var videostarttime = eval(getUrlParameter('videostarttime'));
+  console.log(videostarttime);
 
+	createVideoPlayer(wsUrl, videoContainerId, fileList,videostarttime);
 }
 
 window.onbeforeunload = function() {

@@ -1,4 +1,4 @@
-function createVideoPlayer(wsUrl, videoContainerId, fileList){
+function createVideoPlayer(wsUrl, videoContainerId, fileList, videoStartTime){
   var seekUpdateTimer = undefined;
   var seekUpdate = function() {
     if (currentVideo.isNotLive && !seeking) { 
