@@ -21,3 +21,6 @@ sed -i 's/${project.description}'"/$DESCRIPTION/g" $OUTPUT_FOLDER/bower.json
 cp -a src/main/resources/static/* $OUTPUT_FOLDER/
 cd $OUTPUT_FOLDER 
 bower install
+
+mv static/* .
+rmdir static
