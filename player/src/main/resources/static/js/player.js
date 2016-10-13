@@ -451,8 +451,11 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoStartTime){
       multiFileLoading = true;
       preLoadInfo(0);
 
+      if (videoStartTime) {
+        console.log('it\'s videoStartTime, maybe can read time from videoStartTime, not finish');
+      }
+
       multiFileLoadingTimer = setInterval(function(checkLoaded) {
-        console.log('interval entered');
         if (multiFileLoading) {
           console.log('still loading all video info');
         } else {
