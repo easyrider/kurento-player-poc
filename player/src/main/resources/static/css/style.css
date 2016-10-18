@@ -97,7 +97,7 @@ button.Volume {
    * 80px = timing width
    * */
   min-width: 60px;
-	width: calc(100% - 48px - 12px - 8px - 120px - 104px );
+	width: calc(100% - 48px - 12px - 8px - 120px);
 }
 
 .timing {
