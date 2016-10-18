@@ -715,11 +715,13 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoStartTime){
       // cleanup seekUpdateTimer if exist
       toggleSeekTimer(true);
       videoContainer.find('.seek-bar').css('display', 'inline');
+      videoContainer.find('.timing').css('display', 'inline');
       videoContainer.find('.live').css('display', 'none');
     
     } else {
       toggleSeekTimer(false);
       videoContainer.find('.seek-bar').css('display', 'none');
+      videoContainer.find('.timing').css('display', 'none');
       videoContainer.find('.live').css('display', 'inline');
     }
   }
