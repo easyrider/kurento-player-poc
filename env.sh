@@ -13,10 +13,11 @@ tmux new -d -s WebServer 'mvn compile exec:java -Dkms.url=ws://localhost:8888/ku
 
 URL='http://localhost:8123/'
 
-if [ `uname` == "Linux" ]; then
+OS=`uname`
+if [ $OS == "Linux" ]; then
   echo 'opening browser'
   xdg-open "$URL"
-elif [ `uanme` == "Darwin" ]; then
+elif [ $OS == "Darwin" ]; then
   echo 'opening browser'
   open "$URL"
 else

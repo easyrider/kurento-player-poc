@@ -97,11 +97,11 @@ button.Volume {
    * 80px = timing width
    * */
   min-width: 60px;
-	width: calc(100% - 48px - 12px - 8px - 120px - 94px );
+	width: calc(100% - 48px - 12px - 8px - 120px - 104px );
 }
 
 .timing {
-  width: 90px;
+  width: 100px;
 }
 
 button.live {
