@@ -14,8 +14,11 @@ var getUrlParameter = function getUrlParameter(sParam) {
 };
 
 window.onload = function() {
-	var wsUrl = 'ws://' + location.host + '/player';
-	var videoContainerId = "video-container-1";
+  var protocol = (location.protocol == "https:" ? "wss://" : "ws://") ;
+  const inCityEyes = location.pathname.split("/")[1]=="CityEyes";
+  var path = (inCityEyes ? "/CityEyes/rest/player" : "/player" );
+  var wsUrl = protocol + location.host + path;
+  var videoContainerId = "video-container-1";
   var source = getUrlParameter('URL');
   var fileList;
   if (source && source[0]=='[') {
