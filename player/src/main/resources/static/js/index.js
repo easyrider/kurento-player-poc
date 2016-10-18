@@ -19,13 +19,21 @@ window.onload = function() {
   var path = (inCityEyes ? "/CityEyes/rest/player" : "/player" );
   var wsUrl = protocol + location.host + path;
   var videoContainerId = "video-container-1";
+
+  // in zul, it called "playList"
   var source = getUrlParameter('URL');
   var fileList;
-  if (source && source[0]=='[') {
-    fileList = JSON.parse(source);
+  if (source) {
+    fileList = source.split(',');
   } else {
     fileList = [source];
   }
+
+  var startTime = eval(getUrlParameter('startTime'));
+  console.log(startTime);
+
+  var videoLength = eval(getUrlParameter('videoLength'));
+  console.log(videoLength);
 
   var videostarttime = eval(getUrlParameter('videostarttime'));
   console.log(videostarttime);
