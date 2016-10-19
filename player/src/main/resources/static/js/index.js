@@ -30,7 +30,8 @@ window.onload = function() {
   })
   console.log(paramString);
 
-  createVideoPlayer(wsUrl, videoContainerId, paramString.URL, paramString.videoStartTime);
+  createVideoPlayer(wsUrl, videoContainerId, 
+    paramString.URL, paramString.videoLength, paramString.videoStartTime);
 }
 
 window.onbeforeunload = function() {

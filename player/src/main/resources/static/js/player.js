@@ -1,4 +1,4 @@
-function createVideoPlayer(wsUrl, videoContainerId, fileList, videoStartTime){
+function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, videoStartTime){
   var seekUpdateTimer = undefined;
   var seekUpdate = function() {
     if (currentVideo.isNotLive && !seeking) { 
@@ -314,7 +314,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoStartTime){
         duration = currentVideo.videoDuration;
       } else { 
         for (var index=0; index < playing; index++) {
-          console.log('seekbar value should add previewious video ');
           videoPosition += multiFileInfo[index];
         }
         videoPosition += parsedMessage.position;
@@ -329,18 +328,18 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoStartTime){
       var durationMinute = parseInt(durationSecond/60);
       var positionMinute = parseInt(positionSecond/60);
 
-      durationSecond = ( durationSecond % 60 );
-      positionSecond = ( positionSecond % 60 );
+      durationSecond = ( durationSecond % 60 ).toString();
+      positionSecond = ( positionSecond % 60 ).toString();
 
       if (durationSecond.length==1) {
-	  	durationSecond = '0' + durationSecond;
-	  }
+	  	  durationSecond = '0' + durationSecond.toString();
+  	  }
       if (positionSecond.length==1) {
-	  	positionSecond = '0' + positionSecond;
-	  }
+	    	positionSecond = '0' + positionSecond.toString();
+	    }
 
       var timingText = durationMinute.toString() + ":" + durationSecond + " / " +
-          positionMinute.toString() + ":" + positionSecond.toString();
+          positionMinute + ":" + positionSecond;
 
       timing.text(timingText);
 
@@ -449,36 +448,45 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoStartTime){
       targetVideo.started = true;
     }
 
+    // maybe have multiFile to load
     var multiFileInfoLoaded = (!multiFile);
-    // preload all file info for totalLength
-    if (fileList.length>1&&multiFileInfoLoaded) {
+    if (fileList.length>1 && multiFileInfoLoaded) {
+      var sumTotalTime = function() {
+        multiFileInfoTotalTime = 0;
+        multiFileInfo.forEach(function(entry) {
+          multiFileInfoTotalTime += entry;
+        });
+        console.log("TotalTime: "+multiFileInfoTotalTime.toString());
+      };
+
       console.log('===multiFiles===');
       console.log('===enable toggles===');
       multiFile = true;
-      multiFileLoading = true;
-      preLoadInfo(0);
 
-      if (videoStartTime) {
-        console.log('it\'s videoStartTime, maybe can read time from videoStartTime, not finish');
+      // load video's length from videoLength
+      if (videoLength.length == fileList.length) {
+        multiFileInfo = videoLength.map(function(item) {return parseInt(item)*1000});
+        sumTotalTime();
+        startVideo();
+        
+      // load video's length from kurento Media Server's videoInfo
+      } else {
+        multiFileLoading = true;
+        preLoadInfo(0);
+        multiFileLoadingTimer = setInterval(function(checkLoaded) {
+          if (multiFileLoading) {
+            console.log('still loading "all" video info');
+          } else {
+            console.log('all video info loaded');
+            clearInterval(multiFileLoadingTimer);
+  
+            sumTotalTime();
+            startVideo();
+          }
+        }, 1000);
       }
 
-      multiFileLoadingTimer = setInterval(function(checkLoaded) {
-        if (multiFileLoading) {
-          console.log('still loading all video info');
-        } else {
-          console.log('all video info loaded');
-          clearInterval(multiFileLoadingTimer);
-
-          multiFileInfoTotalTime = 0;
-          multiFileInfo.forEach(function(entry) {
-            multiFileInfoTotalTime += entry;
-          });
-          console.log(multiFileInfoTotalTime);
-
-          startVideo();
-        }
-      }, 1000);
-
+    // or single file to play / multiFile already Loaded
     } else {
       startVideo();
     }
