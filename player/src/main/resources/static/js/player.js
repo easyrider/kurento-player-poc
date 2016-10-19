@@ -39,6 +39,8 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
   var currentProcess = 1;
   var currentVideo = video1;
   var currentSocket = ws1;
+  var bufferLoading = false;
+  var bufferSeeked = false;
   var bufferPrepared = false;
   var multiFile = false;
   var multiFileInfo = [];
@@ -234,6 +236,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
         console.log(multiFileInfo);
 
         // cleanup current webrtc
+        stop();
         webRtcPeer1.dispose();
         webRtcPeer = null;
 
@@ -246,12 +249,14 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
           preLoadInfo(multiFileInfo.length);
           break;
         }
-      } else if (bufferPrepared==false) {
+      // normal loading
+      } else if (bufferLoading==false) {
+		console.log("getting videoInfo Normally");
         var targetVideo = currentVideo;
         var targetWs = currentSocket;
-      // preload mutiFiles
       // preload video for gpaless play
       } else {
+		console.log("getting videoInfo for next video");
         if ( currentUsing==1 ) {
           var targetVideo = video2;
           var targetWs = ws2;
@@ -260,10 +265,13 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
           var targetWs = ws1;
         }
         targetVideo.isNotLive = ( parsedMessage.isSeekable && parsedMessage.videoDuration>0 );
-        if (targetVideo.isNotLive) {
+        if (targetVideo.isNotLive ) {
+		  console.log('background loaded, seek to zero');
           pause(targetWs,true);
           sendSeek(targetWs,targetVideo,0);
         }
+		bufferLoading = false;
+		bufferPrepared = true;
       }
 
       targetVideo.videoDuration = parsedMessage.videoDuration;
@@ -343,15 +351,17 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
 
       timing.text(timingText);
 
+      // TODO: not design for multiFile Seekbar
       var seekBarValue = videoPosition/duration * 100;
       // console.log("=== seekBarValue ===", seekBarValue);
       seekBar.value = seekBarValue
 
       var left = ( currentVideo.videoDuration - videoPosition ) / 1000;
-      // console.log("=== left:"+left.toString()+" ===" )
-      if (left<10 && bufferPrepared==false) {
+      console.log( currentVideo.videoDuration);
+      console.log("=== left:"+left.toString()+" ===" );
+      if (left<10 && bufferPrepared==false && bufferLoading==false) {
         // even no next video, still have to mark prepared
-        bufferPrepared = true;
+		bufferLoading = true;
 
         // check next video exist
         nextPlaying = playing + 1;
@@ -464,7 +474,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
       multiFile = true;
 
       // load video's length from videoLength
-      if (videoLength.length == fileList.length) {
+      if (videoLength && videoLength.length == fileList.length) {
         multiFileInfo = videoLength.map(function(item) {return parseInt(item)*1000});
         sumTotalTime();
         startVideo();
@@ -612,9 +622,13 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
       currentVideo.style.display = "";
 
       // another video may start or not
-      if (currentVideo.started) {
+      if (bufferPrepared) {
+		console.log('video prepared, just resume');
         resume(currentSocket,true);
+		bufferSeeked = false;
+		bufferPrepared = false;
       } else {
+		console.log('video not prepared, start video');
         start(fileList[playing], currentVideo, currentSocket);
       }
 
@@ -633,6 +647,8 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
       playing = 0;
       togglePause();
     }
+	bufferSeeked = false;
+    bufferLoading = false;
     bufferPrepared = false;
   }
 
