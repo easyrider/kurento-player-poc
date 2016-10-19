@@ -332,6 +332,13 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoStartTime){
       durationSecond = ( durationSecond % 60 );
       positionSecond = ( positionSecond % 60 );
 
+      if (durationSecond.length==1) {
+	  	durationSecond = '0' + durationSecond;
+	  }
+      if (positionSecond.length==1) {
+	  	positionSecond = '0' + positionSecond;
+	  }
+
       var timingText = durationMinute.toString() + ":" + durationSecond + " / " +
           positionMinute.toString() + ":" + positionSecond.toString();
 
