@@ -1,7 +1,7 @@
 function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, videoStartTime){
   var seekUpdateTimer = undefined;
   var seekUpdate = function() {
-    if (currentVideo.isNotLive && !seeking) { 
+    if (currentVideo.isNotLive && !seeking) {
       getPosition(currentSocket);
     } else {
       console.log('live video, don\' need getPosition');
@@ -208,7 +208,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
     // apply setting
     currentVideo.style.top = (videoAdjust.top) + 'px';
     currentVideo.style.left = (videoAdjust.left) + 'px';
-    currentVideo.style[videoAdjust.transform] = 
+    currentVideo.style[videoAdjust.transform] =
       'scale(' + videoAdjust.zoom + ') rotate(' + videoAdjust.rotate + 'deg)';
   }
 
@@ -251,12 +251,12 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
         }
       // normal loading
       } else if (bufferLoading==false) {
-		console.log("getting videoInfo Normally");
+        console.log("getting videoInfo Normally");
         var targetVideo = currentVideo;
         var targetWs = currentSocket;
       // preload video for gpaless play
       } else {
-		console.log("getting videoInfo for next video");
+        console.log("getting videoInfo for next video");
         if ( currentUsing==1 ) {
           var targetVideo = video2;
           var targetWs = ws2;
@@ -266,12 +266,12 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
         }
         targetVideo.isNotLive = ( parsedMessage.isSeekable && parsedMessage.videoDuration>0 );
         if (targetVideo.isNotLive ) {
-		  console.log('background loaded, seek to zero');
+          console.log('background loaded, seek to zero');
           pause(targetWs,true);
           sendSeek(targetWs,targetVideo,0);
         }
-		bufferLoading = false;
-		bufferPrepared = true;
+        bufferLoading = false;
+        bufferPrepared = true;
       }
 
       targetVideo.videoDuration = parsedMessage.videoDuration;
@@ -320,7 +320,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
       if (!multiFile) {
         videoPosition = parsedMessage.position;
         duration = currentVideo.videoDuration;
-      } else { 
+      } else {
         for (var index=0; index < playing; index++) {
           videoPosition += multiFileInfo[index];
         }
@@ -340,11 +340,11 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
       positionSecond = ( positionSecond % 60 ).toString();
 
       if (durationSecond.length==1) {
-	  	  durationSecond = '0' + durationSecond.toString();
-  	  }
+        durationSecond = '0' + durationSecond.toString();
+      }
       if (positionSecond.length==1) {
-	    	positionSecond = '0' + positionSecond.toString();
-	    }
+        positionSecond = '0' + positionSecond.toString();
+      }
 
       var timingText = durationMinute.toString() + ":" + durationSecond + " / " +
           positionMinute + ":" + positionSecond;
@@ -361,7 +361,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
       console.log("=== left:"+left.toString()+" ===" );
       if (left<10 && bufferPrepared==false && bufferLoading==false) {
         // even no next video, still have to mark prepared
-		bufferLoading = true;
+    bufferLoading = true;
 
         // check next video exist
         nextPlaying = playing + 1;
@@ -378,7 +378,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
           }
         }
       }
-      
+
       break;
     case 'iceCandidate':
       break;
@@ -407,7 +407,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
           onOffer(error, offerSdp, fileList[fileListNumber], ws1)
         });
       });
-  }  
+  }
 
   // actually video control functions
   var start = function (sorceUrl, targetVideo, targetWs, noToggle) {
@@ -423,7 +423,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
         audio : true,
         video : true
       }
-  
+
       var options = {
         remoteVideo : targetVideo,
         mediaConstraints : userMediaConstraints,
@@ -431,15 +431,15 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
           onIceCandidate(candidate, targetWs)
         }
       }
-  
+
       console.info('User media constraints' + userMediaConstraints);
-  
+
       if (currentProcess==1) {
         webRtcPeer1 = new kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options, function(error) {
           if (error) {
             return console.error(error);
           }
-  
+
           webRtcPeer1.generateOffer(function(error, offerSdp){
             onOffer(error, offerSdp, sorceUrl, targetWs)
           });
@@ -449,7 +449,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
           if (error) {
             return console.error(error);
           }
-  
+
           webRtcPeer2.generateOffer(function(error, offerSdp){
             onOffer(error, offerSdp, sorceUrl, targetWs)
           });
@@ -478,7 +478,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
         multiFileInfo = videoLength.map(function(item) {return parseInt(item)*1000});
         sumTotalTime();
         startVideo();
-        
+
       // load video's length from kurento Media Server's videoInfo
       } else {
         multiFileLoading = true;
@@ -489,7 +489,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
           } else {
             console.log('all video info loaded');
             clearInterval(multiFileLoadingTimer);
-  
+
             sumTotalTime();
             startVideo();
           }
@@ -606,7 +606,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
         console.log('already fullscreen!!');
         toggleFullscreen();
       }
-      
+
       // switch
       currentVideo.style.display = "none";
       stop(currentSocket,currentVideo,true);
@@ -623,12 +623,12 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
 
       // another video may start or not
       if (bufferPrepared) {
-		console.log('video prepared, just resume');
+        console.log('video prepared, just resume');
         resume(currentSocket,true);
-		bufferSeeked = false;
-		bufferPrepared = false;
+        bufferSeeked = false;
+        bufferPrepared = false;
       } else {
-		console.log('video not prepared, start video');
+        console.log('video not prepared, start video');
         start(fileList[playing], currentVideo, currentSocket);
       }
 
@@ -647,7 +647,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
       playing = 0;
       togglePause();
     }
-	bufferSeeked = false;
+    bufferSeeked = false;
     bufferLoading = false;
     bufferPrepared = false;
   }
@@ -670,7 +670,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
     toggleSeekTimer(false);
 
     if (multiFile) {
-      for (var index in properties) { 
+      for (var index in properties) {
         fileDuration = multiFileInfo[index];
         if (seekPosition < fileDuration) {
           console.log('in file '+index.toString());
@@ -691,7 +691,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
         start(fileList[playing], currentVideo, currentSocket);
         multiFileSeeking = true;
         togglePause(true);
-        
+
         //throw('not finish');
       }
     } else {
@@ -748,7 +748,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
       videoContainer.find('.seek-bar').css('display', 'inline');
       videoContainer.find('.timing').css('display', 'inline');
       videoContainer.find('.live').css('display', 'none');
-    
+
     } else {
       toggleSeekTimer(false);
       videoContainer.find('.seek-bar').css('display', 'none');
