@@ -26,7 +26,9 @@ window.onload = function() {
 
   params.forEach(function(param) {
     var loading = getUrlParameter(param);
-    paramString[param] = loading.split(',');
+	if (loading) {
+      paramString[param] = loading.split(',');
+	}
   })
   console.log(paramString);
 
