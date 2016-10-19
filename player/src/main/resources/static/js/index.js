@@ -15,10 +15,13 @@ var getUrlParameter = function getUrlParameter(sParam) {
 
 window.onload = function() {
   var protocol = (location.protocol == "https:" ? "wss://" : "ws://") ;
-  const inCityEyes = location.pathname.split("/")[1]=="CityEyes";
+  var inCityEyes = location.pathname.split("/")[1]=="CityEyes";
   var path = (inCityEyes ? "/CityEyes/rest/player" : "/player" );
   var wsUrl = protocol + location.host + path;
   var videoContainerId = "video-container-1";
+
+  var params = [ 'URL', 'startTime', 'videoLength', 'videoStartTime' ];
+  var paramString = {};
 
   // in zul, it called "playList"
   var source = getUrlParameter('URL');
@@ -28,17 +31,22 @@ window.onload = function() {
   } else {
     fileList = [source];
   }
+  console.log(fileList);
 
-  var startTime = eval(getUrlParameter('startTime'));
+  /*
+  var startTime = getUrlParameter('startTime').split(',');
   console.log(startTime);
 
-  var videoLength = eval(getUrlParameter('videoLength'));
+  var videoLength = getUrlParameter('videoLength').split(',');
   console.log(videoLength);
 
-  var videostarttime = eval(getUrlParameter('videostarttime'));
-  console.log(videostarttime);
+  var videoStartTime = getUrlParameter('videoStartTime').split(',');
+  console.log(videoStartTime);
 
-	createVideoPlayer(wsUrl, videoContainerId, fileList,videostarttime);
+  createVideoPlayer(wsUrl, videoContainerId, fileList,videoStartTime);
+  */
+
+  createVideoPlayer(wsUrl, videoContainerId, fileList);
 }
 
 window.onbeforeunload = function() {
