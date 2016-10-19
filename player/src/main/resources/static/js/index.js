@@ -20,33 +20,17 @@ window.onload = function() {
   var wsUrl = protocol + location.host + path;
   var videoContainerId = "video-container-1";
 
+  // in zul, URL is playList
   var params = [ 'URL', 'startTime', 'videoLength', 'videoStartTime' ];
   var paramString = {};
 
-  // in zul, it called "playList"
-  var source = getUrlParameter('URL');
-  var fileList;
-  if (source) {
-    fileList = source.split(',');
-  } else {
-    fileList = [source];
-  }
-  console.log(fileList);
+  params.forEach(function(param) {
+    var loading = getUrlParameter(param);
+    paramString[param] = loading.split(',');
+  })
+  console.log(paramString);
 
-  /*
-  var startTime = getUrlParameter('startTime').split(',');
-  console.log(startTime);
-
-  var videoLength = getUrlParameter('videoLength').split(',');
-  console.log(videoLength);
-
-  var videoStartTime = getUrlParameter('videoStartTime').split(',');
-  console.log(videoStartTime);
-
-  createVideoPlayer(wsUrl, videoContainerId, fileList,videoStartTime);
-  */
-
-  createVideoPlayer(wsUrl, videoContainerId, fileList);
+  createVideoPlayer(wsUrl, videoContainerId, paramString.URL, paramString.videoStartTime);
 }
 
 window.onbeforeunload = function() {
