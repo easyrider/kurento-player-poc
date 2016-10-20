@@ -355,7 +355,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
           positionMinute + ":" + positionSecond;
       timing.text(timingText);
 
-      // TODO: not design for multiFile Seekbar
       var left = ( currentVideo.videoDuration - parsedMessage.position ) / 1000;
       console.log("=== left:"+left.toString()+" ===" );
       if (left<10 && bufferPrepared==false && bufferLoading==false) {
@@ -593,7 +592,10 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
   }
 
   var playEnd = function (targetVideo, targetWs) {
-    playing += 1;
+    playing = parseInt(playing) + 1;
+
+    console.log(playing);
+    console.log(fileList.length);
 
     //start(fileList[playing], targetVideo, targetWs);
     if(playing < fileList.length){
@@ -618,6 +620,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
         currentSocket = ws1;
       }
       currentVideo.style.display = "";
+      bufferPrepared = false;
 
       // another video may start or not
       if (bufferPrepared) {
@@ -636,6 +639,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
         console.log('resume fullscreen');
         toggleFullscreen();
       }
+
     // playlist end
     } else {
       hideSpinner(targetVideo);
