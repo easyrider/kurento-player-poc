@@ -330,6 +330,11 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
         //console.log(duration);
         //console.log(videoPosition);
       }
+
+      var seekBarValue = videoPosition/duration * 100;
+      // console.log("=== seekBarValue ===", seekBarValue);
+      seekBar.value = seekBarValue
+
       var durationSecond = parseInt(duration / 1000);
       var positionSecond = parseInt(videoPosition / 1000);
 
@@ -348,20 +353,14 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
 
       var timingText = durationMinute.toString() + ":" + durationSecond + " / " +
           positionMinute + ":" + positionSecond;
-
       timing.text(timingText);
 
       // TODO: not design for multiFile Seekbar
-      var seekBarValue = videoPosition/duration * 100;
-      // console.log("=== seekBarValue ===", seekBarValue);
-      seekBar.value = seekBarValue
-
-      var left = ( currentVideo.videoDuration - videoPosition ) / 1000;
-      console.log( currentVideo.videoDuration);
+      var left = ( currentVideo.videoDuration - parsedMessage.position ) / 1000;
       console.log("=== left:"+left.toString()+" ===" );
       if (left<10 && bufferPrepared==false && bufferLoading==false) {
         // even no next video, still have to mark prepared
-    bufferLoading = true;
+        bufferLoading = true;
 
         // check next video exist
         nextPlaying = playing + 1;
@@ -390,7 +389,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
   // register event when server send message over WebSocket
   ws1.onmessage = wsOnMsg;
   ws2.onmessage = wsOnMsg;
-
 
   var preLoadInfo = function(fileListNumber) {
       var options = {
@@ -666,14 +664,17 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
     }
 
     var seekPosition = parseInt(totalVideoDuration * (seekBar.val() / 100));
+    console.log('seekPosition: '+ seekPosition.toString() );
     seeking = true;
     toggleSeekTimer(false);
 
     if (multiFile) {
-      for (var index in properties) {
+      var index = 0;
+      for (index in multiFileInfo) {
         fileDuration = multiFileInfo[index];
         if (seekPosition < fileDuration) {
           console.log('in file '+index.toString());
+          console.log('current Playing '+playing.toString() )
           break;
         } else {
           seekPosition -= fileDuration;
@@ -685,14 +686,12 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
         sendSeek(targetWs, targetVideo, seekPosition);
         multiFileSeeking = false;
       } else {
-        console.log('need switch file');
+        console.log('need switch file to '+index.toString());
         stop(currentSocket,currentVideo,false);
         playing = index;
         start(fileList[playing], currentVideo, currentSocket);
         multiFileSeeking = true;
         togglePause(true);
-
-        //throw('not finish');
       }
     } else {
       sendSeek(targetWs, targetVideo, seekPosition);
