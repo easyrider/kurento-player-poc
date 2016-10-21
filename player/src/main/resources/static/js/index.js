@@ -33,7 +33,7 @@ window.onload = function() {
   console.log(paramString);
 
   createVideoPlayer(wsUrl, videoContainerId, 
-    paramString.URL, paramString.videoLength, paramString.videoStartTime);
+    paramString.URL, paramString.videoLength, paramString.videoStartTime, true);
 }
 
 window.onbeforeunload = function() {
