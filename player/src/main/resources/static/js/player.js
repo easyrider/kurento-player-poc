@@ -240,7 +240,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
         console.log(multiFileInfo);
 
         // cleanup current webrtc
-        stop();
+        //stop(ws1,video1);
         webRtcPeer1.dispose();
         webRtcPeer = null;
 
@@ -645,13 +645,15 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
       }
 
     // playlist end
-    } else {
+    } else if (started) {
       hideSpinner(targetVideo);
       stop(ws1, video1);
       stop(ws2, video2);
       started = false;
       playing = 0;
       togglePause();
+    } else {
+      console.log('already stop');
     }
     bufferSeeked = false;
     bufferLoading = false;
@@ -728,12 +730,15 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
     targetWs.send(jsonMessage);
   }
 
-  var togglePause = function (forceToPause) {
+  var togglePause = function (forceToPause,forceToPlay) {
+    console.log('togglePause');
     var pauseText = playButton.text();
-    if (pauseText == "Play" || forceToPause ) {
+    if (pauseText == "Play" || forceToPause && !forceToPlay ) {
       playButton.text("Pause");
+      console.log('set TEXT to pause');
     } else {
       playButton.text("Play");
+      console.log('set TEXT to play');
     }
   }
 
