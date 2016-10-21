@@ -1,4 +1,4 @@
-function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, videoStartTime){
+function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, videoStartTime, autoPlay){
   var seekUpdateTimer = undefined;
   var seekUpdate = function() {
     if (currentVideo.isNotLive && !seeking) {
@@ -71,14 +71,18 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
     }
   }
 
+  var startPlay = function() {
+    started = true;
+    start(fileList[playing], currentVideo, currentSocket);
+  }
+
   // click event
   playButton.click(function() {
     var actionName = playButton.text();
     if (actionName == "Play") {
       // Play the video
       if(!started){
-        started = true;
-        start(fileList[playing], currentVideo, currentSocket);
+        startPlay();
       } else {
         resume(currentSocket);
       }
@@ -815,5 +819,9 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
       arguments[i].poster = './img/webrtc.png';
       arguments[i].style.background = '';
     }
+  }
+
+  if (autoPlay) {
+    startPlay();
   }
 }
