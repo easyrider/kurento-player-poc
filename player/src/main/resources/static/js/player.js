@@ -33,6 +33,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
   var seekBar = videoContainer.find(".seek-bar");
   var volumeBar = videoContainer.find(".volume-bar");
   var timing = videoContainer.find(".timing");
+  var realtime = videoContainer.find(".realtime");
 
   //default player is video1
   var currentUsing = 1;
@@ -339,24 +340,18 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
       // console.log("=== seekBarValue ===", seekBarValue);
       seekBar.value = seekBarValue
 
-      var durationSecond = parseInt(duration / 1000);
-      var positionSecond = parseInt(videoPosition / 1000);
-
-      var durationMinute = parseInt(durationSecond/60);
-      var positionMinute = parseInt(positionSecond/60);
-
-      durationSecond = ( durationSecond % 60 ).toString();
-      positionSecond = ( positionSecond % 60 ).toString();
-
-      if (durationSecond.length==1) {
-        durationSecond = '0' + durationSecond.toString();
-      }
-      if (positionSecond.length==1) {
-        positionSecond = '0' + positionSecond.toString();
+      var durationHMS = ms2hms(duration,false,true);
+      var positionHMS = ms2hms(videoPosition,false,true);
+      
+      if (videoStartTime) {
+        var realTime = ms2hms(parseInt(videoStartTime[playing]) + videoPosition);
+        var realTimeStr = realTime.hour + ":" + realTime.minute + ":" + realTime.second;
+        realtime.text(realTimeStr);
       }
 
-      var timingText = durationMinute.toString() + ":" + durationSecond + " / " +
-          positionMinute + ":" + positionSecond;
+      var timingText = 
+          positionHMS.minute + ":" + positionHMS.second + " / " +
+          durationHMS.minute + ":" + durationHMS.second;
       timing.text(timingText);
 
       var left = ( currentVideo.videoDuration - parsedMessage.position ) / 1000;
@@ -380,7 +375,6 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
           }
         }
       }
-
       break;
     case 'iceCandidate':
       break;
@@ -829,4 +823,36 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
   if (autoPlay) {
     startPlay();
   }
+
+  var ms2hms = function(ms,noMinute,noHour) {
+    var timing = {};
+
+    // getting second
+    timing.second = Math.floor(ms/1000);
+    if (noMinute) {
+      timing.second.toString();
+      return timing;
+    }
+
+    // getting minutes
+    timing.minute = Math.floor(timing.second / 60);
+    timing.second = (timing.second % 60).toString();
+    if (timing.second.length==1) {
+      timing.second = '0' + timing.second;
+    }
+    if (noHour) {
+      return timing;
+    }
+
+    // getting hour
+    timing.hour = Math.floor(timing.minute / 60);
+    timing.minute = (timing.minute % 60).toString();
+    if (timing.minute.length==1) {
+      timing.minute = '0' + timing.minute;
+    }
+
+    timing.hour = timing.hour.toString();
+    return timing;
+  }
+  console.log( ms2hms(67436000) );
 }
