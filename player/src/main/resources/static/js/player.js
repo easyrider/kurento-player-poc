@@ -412,6 +412,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
       togglePause();
     }
     showSpinner(targetVideo);
+
     var startVideo = function() {
       // Video and audio by default
       var userMediaConstraints = {
@@ -453,6 +454,28 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
       targetVideo.started = true;
     }
 
+    var checkWSTimer;
+    var CheckWSStartVideo = function() {
+      checkWSTimer = setInterval(function() {
+        var wsStatus = [ws1.readyState, ws2.readyState];
+        // WebSocket readyStatus should be:
+        // 0: CONNECTING  2: CLSING
+        // 1: OPEN        3: CLOSED
+        // from https://developer.mozilla.org/en-US/docs/Web/API/WebSocket#Ready_state_constants
+        if (wsStatus[0]>1 && wsStatus[1]>1) {
+          console.log('WebSocket closing or closed');
+          alert("unable to create WebSocket");
+          window.clearInterval(checkWSTimer);
+        } else if (wsStatus[0]==1 && wsStatus[1]==1) {
+          console.log('both WebSocket ready');
+          window.clearInterval(checkWSTimer);
+          startVideo();
+        } else {
+          console.log('WebSocket prepareing');
+        }
+      },1000);
+    };
+
     // maybe have multiFile to load
     var multiFileInfoLoaded = (!multiFile);
     if (fileList.length>1 && multiFileInfoLoaded) {
@@ -472,7 +495,8 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
       if (videoLength && videoLength.length == fileList.length) {
         multiFileInfo = videoLength.map(function(item) {return parseInt(item)*1000});
         sumTotalTime();
-        startVideo();
+        CheckWSStartVideo();
+        //startVideo();
 
       // load video's length from kurento Media Server's videoInfo
       } else {
@@ -486,14 +510,16 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
             clearInterval(multiFileLoadingTimer);
 
             sumTotalTime();
-            startVideo();
+            CheckWSStartVideo();
+            //startVideo();
           }
         }, 1000);
       }
 
     // or single file to play / multiFile already Loaded
     } else {
-      startVideo();
+      //startVideo();
+      CheckWSStartVideo();
     }
   }
 
