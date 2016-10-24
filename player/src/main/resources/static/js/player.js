@@ -464,8 +464,7 @@ function createVideoPlayer(wsUrl, videoContainerId, fileList, videoLength, video
         // from https://developer.mozilla.org/en-US/docs/Web/API/WebSocket#Ready_state_constants
         if (wsStatus[0]>1 && wsStatus[1]>1) {
           console.log('WebSocket closing or closed');
-          alert("unable to create WebSocket");
-          hideSpinner(targetVideo);
+          alert("unable to create WebSocket, reload or server my broken");
           window.clearInterval(checkWSTimer);
         } else if (wsStatus[0]==1 && wsStatus[1]==1) {
           console.log('both WebSocket ready');
